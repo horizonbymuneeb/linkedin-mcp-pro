@@ -209,6 +209,17 @@ class BrowserClient:
         """Clear and fill a field by ref or CSS selector."""
         await self._run("fill", selector, text, timeout=_DEFAULT_TIMEOUT)
 
+    async def upload(self, selector: str, file_path: str) -> None:
+        """Upload a file to a file input element (ref or CSS selector).
+
+        The browser's file chooser dialog is bypassed by agent-browser which
+        uses the Chrome DevTools Protocol's `setFileInputFiles` directly.
+        """
+        file_path = os.path.expanduser(file_path)
+        if not os.path.isfile(file_path):
+            raise FileNotFoundError(f"file not found: {file_path}")
+        await self._run("upload", selector, file_path, timeout=_LONG_TIMEOUT)
+
     async def type_text(self, text: str) -> None:
         """Type text at current focus (no selector)."""
         await self._run("keyboard", "type", text, timeout=_DEFAULT_TIMEOUT)
