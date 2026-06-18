@@ -9,22 +9,18 @@ This guide shows you **what to type** in your MCP client and **what happens** be
 ## Table of contents
 
 1. [Quick start (60 seconds)](#quick-start-60-seconds)
-2. [Common workflows](#common-workflows)
-   - [Post about a topic](#post-about-a-topic)
-   - [Send connection requests to a target audience](#send-connection-requests-to-a-target-audience)
-   - [Search and explore](#search-and-explore)
-   - [Read profile data](#read-profile-data)
-   - [Send a direct message](#send-a-direct-message)
-   - [Engage with content (likes, comments)](#engage-with-content-likes-comments)
-3. [Prompting tips](#prompting-tips)
-4. [Safety defaults](#safety-defaults)
-5. [Troubleshooting](#troubleshooting)
+2. [Setup and authentication](#setup-and-authentication)
+3. [Common workflows](#common-workflows)
+4. [Prompting tips](#prompting-tips)
+5. [Safety defaults](#safety-defaults)
+6. [Handling security checks (captcha / 2FA)](#handling-security-checks-captcha--2fa)
+7. [Troubleshooting](#troubleshooting)
 
 ---
 
 ## Quick start (60 seconds)
 
-Once the server is running, just talk to your MCP client (Claude Desktop, Cursor, etc.) in natural language. The LLM picks the right tools automatically.
+After running `linkedin-mcp login` once (see [Setup and authentication](#setup-and-authentication)), the server is ready. Just talk to your MCP client (Claude Desktop, Cursor, etc.) in natural language. The LLM picks the right tools automatically.
 
 **You type:**
 
@@ -45,6 +41,54 @@ Once the server is running, just talk to your MCP client (Claude Desktop, Cursor
 > 2. **Erik Johansson** — AI Research Scientist at Klarna. Background in NLP and vector search...
 
 That's it. The LLM is your interface. You don't call tools directly.
+
+---
+
+## Setup and authentication
+
+linkedin-mcp-pro v0.3.0 uses a **persistent browser session** — you log in once through a real browser, and that session is reused for every subsequent call. No more 7-day cookie expiry pain.
+
+### Recommended: one-time browser login
+
+```bash
+linkedin-mcp login
+```
+
+What happens:
+1. A browser window opens to the LinkedIn login page (Chromium, headless=False).
+2. You log in normally: email + password, then any 2FA / SMS / authenticator prompt LinkedIn shows.
+3. Once you reach the feed, the server saves the browser profile to `~/.linkedin-mcp/profile/` and closes the window.
+4. From now on, every MCP call uses that profile. Cookies refresh automatically (the browser handles rotation — `li_at` is typically valid for months, not the old 7-day window).
+
+The profile is a normal Chromium user-data-dir, so:
+- It's portable (you can `tar` it, copy it to another machine, mount it in Docker).
+- It's the same profile you can open in Chrome yourself with `chromium --user-data-dir=~/.linkedin-mcp/profile` for debugging.
+
+### Fallback: `LI_AT` env var (headless / CI only)
+
+If you can't open a browser — remote server, Docker container without X, CI runner — set `LI_AT` as before:
+
+```bash
+# .env
+LI_AT=your-li_at-value-here
+```
+
+The browser session is still tried first. `LI_AT` is only used when no profile exists at `~/.linkedin-mcp/profile/`.
+
+To get a value for `LI_AT`:
+1. Log into LinkedIn in any browser.
+2. DevTools → Application → Cookies → `https://www.linkedin.com` → `li_at`.
+3. Copy the value into `.env`.
+
+### Profile location
+
+| Platform | Default profile path |
+|---|---|
+| Linux | `~/.linkedin-mcp/profile/` |
+| macOS | `~/.linkedin-mcp/profile/` |
+| Windows | `%USERPROFILE%\.linkedin-mcp\profile\` |
+
+Override with `LINKEDIN_MCP_PROFILE_DIR=/custom/path` in `.env`.
 
 ---
 
@@ -383,19 +427,47 @@ BUSINESS_HOURS_END=20
 
 ---
 
+## Handling security checks (captcha / 2FA)
+
+LinkedIn occasionally shows a security challenge — a captcha, an email-verification code prompt, or a "confirm it's you" interstitial. The browser session stays open, so **you can complete the challenge manually** instead of the action failing.
+
+When the safety layer detects a challenge, it raises `BrowserChallenge`:
+
+```
+🛡️ LinkedIn security challenge: <URL>
+  Action: complete the challenge in the open browser window, then re-run this command.
+```
+
+**Workflow:**
+
+1. The MCP tool call raises `BrowserChallenge` and pauses.
+2. The browser window stays open (do **not** close it) — it has the live challenge page loaded.
+3. Solve the captcha / enter the 2FA code / click "verify" — whatever LinkedIn asks for.
+4. After the page returns to the normal feed, tell the LLM: "I solved the challenge, please retry."
+5. The LLM retries the same tool call. It now succeeds because the session is authenticated.
+
+**Things to know:**
+- The browser window is real (visible) — it's not a screenshot or popup. You can interact with it directly.
+- Only **one** action will pause at a time. Once you've cleared the challenge, the rest of the workflow continues normally.
+- If a challenge appears frequently, lower your daily caps in `.env` — LinkedIn shows challenges when it sees unusual activity patterns.
+
+**Don't** try to automate captcha solving. linkedin-mcp-pro explicitly does **not** auto-resolve challenges — you handle them, like a human would.
+
+---
+
 ## Troubleshooting
 
-### "Authentication failed" / "li_at expired"
+### "Authentication failed" / session expired
 
-Your session cookie expired (they last ~7 days). Get a fresh one:
+Your saved session expired (rare — `li_at` cookies now last months because the browser refreshes them). Re-run the login command:
 
-1. Open LinkedIn in your browser, log in
-2. DevTools → Application → Cookies → `https://www.linkedin.com` → `li_at`
-3. Copy the value, update `.env`:
-   ```bash
-   LI_AT=AQEDAT...
-   ```
-4. Restart the MCP server
+```bash
+linkedin-mcp login
+```
+
+The browser opens, you log in normally, and the new session overwrites `~/.linkedin-mcp/profile/`. No `.env` edit, no restart needed beyond what the CLI does for you.
+
+If you're on a headless server and using the `LI_AT` fallback, the cookie lifetime is shorter (~7 days). Re-extract from DevTools as before, or switch to the browser login flow.
 
 ### "Rate limited (429)"
 

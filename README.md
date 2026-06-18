@@ -97,7 +97,7 @@ linkedin-mcp-pro is a [Model Context Protocol (MCP)](https://modelcontextprotoco
 
 - Python 3.11+ (tested on 3.13)
 - Node.js 20+ and npm (for `agent-browser` CLI)
-- LinkedIn account with `li_at` cookie (see [Getting your cookie](#getting-your-li_at-cookie))
+- A LinkedIn account (you'll log in once via the browser when prompted)
 
 ### Option A: pip install (recommended)
 
@@ -171,7 +171,36 @@ JSESSIONID_FILE=/etc/linkedin-mcp-pro/jsessionid
 
 ---
 
-## Getting your `li_at` cookie
+## Quick start (v0.3+)
+
+linkedin-mcp-pro v0.3 authenticates with a **persistent browser session** — no cookie extraction required.
+
+```bash
+# 1. Install
+pip install -e .
+# (or use Docker / systemd — see Installation above)
+
+# 2. Log in once (browser opens, log in normally, profile is saved)
+linkedin-mcp login
+
+# 3. Verify
+linkedin-mcp-health
+
+# 4. Start the MCP server
+linkedin-mcp-pro
+```
+
+That's it. All future MCP calls use the saved session at `~/.linkedin-mcp/profile/`. Cookies refresh automatically (the browser handles it — `li_at` typically lasts months, not 7 days).
+
+**Captcha / 2FA?** If LinkedIn shows a security check, the browser window stays open. Solve it manually, then tell your MCP client to retry. See [USAGE.md → Handling security checks](USAGE.md#handling-security-checks-captcha--2fa).
+
+**Headless / CI?** Set the `LI_AT` env var as before (extracted from DevTools). It's used as a fallback when no profile exists. See [USAGE.md → Setup and authentication](USAGE.md#setup-and-authentication) for the full flow.
+
+---
+
+## Legacy: `LI_AT` cookie (still supported)
+
+If you're on a headless server and can't run `linkedin-mcp login`:
 
 1. Open https://www.linkedin.com in Chrome/Firefox and log in
 2. Open DevTools (F12 or Cmd+Opt+I)
@@ -179,7 +208,7 @@ JSESSIONID_FILE=/etc/linkedin-mcp-pro/jsessionid
 4. Find the `li_at` cookie, double-click its value, copy
 5. Paste into `.env` as `LI_AT=...`
 
-For browser-based writes, you also need a working browser session — Patchright will use this cookie to bootstrap.
+The browser session is still tried first; `LI_AT` is only used when no profile exists. Cookie lifetime is ~7 days in this mode (vs. months with browser session).
 
 **Optional but recommended**: copy the `JSESSIONID` cookie too (improves API reliability).
 

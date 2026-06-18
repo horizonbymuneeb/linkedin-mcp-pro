@@ -5,6 +5,33 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.0] — 2026-06-18
+
+### Added
+- **`linkedin-mcp login` CLI command** — opens a Chromium browser, you log in normally (email/password/2FA), the session is captured and reused for all future calls. Replaces the manual `li_at` cookie extraction flow.
+- **Persistent browser profile at `~/.linkedin-mcp/profile/`** — standard Chromium user-data-dir, created on first login. Survives reinstalls, portable across machines, can be opened with `chromium --user-data-dir=~/.linkedin-mcp/profile` for debugging.
+- **`BrowserChallenge` exception** — raised when LinkedIn shows a captcha / security check / 2FA interstitial. Browser window stays open so the user can solve the challenge in-place, then retry the failed command.
+- **`LINKEDIN_MCP_PROFILE_DIR` env var** — override the default profile location (`~/.linkedin-mcp/profile/`). Useful for Docker volume mounts or shared profiles across users.
+- **`LI_AT` env var is now optional** — used as a fallback only when no browser profile exists at `~/.linkedin-mcp/profile/`. Browser session is the primary auth path.
+- **52 new tests** in `test_v0_3_features.py` (179/179 total now passing)
+
+### Changed
+- **Default browser profile path:** `./data/browser-profile/` → `~/.linkedin-mcp/profile/` (now outside the project dir, survives reinstalls and `git clean`).
+- **`BrowserClient` now requires a profile by default** — no longer accepts a bare `li_at` cookie as the sole auth input. Use `linkedin-mcp login` to bootstrap the profile, or set `LI_AT` for the fallback path.
+- **`_check_for_challenges()` enhanced** — now detects captcha, email-verification, "unusual activity" interstitials, and redirect-to-login; raises `BrowserChallenge` with the live page URL so the user can solve it manually.
+- **Cookie lifetime** — effectively unlimited for browser-session users (the browser refreshes `li_at` automatically, typically 6-12 months). `LI_AT`-only users still see ~7-day rotation.
+
+### Migration from v0.2.0
+
+1. Upgrade: `pip install -U linkedin-mcp-pro`
+2. Run once: `linkedin-mcp login` — log in normally, profile is saved to `~/.linkedin-mcp/profile/`.
+3. Optionally remove `LI_AT` from your `.env` (or leave it as a fallback — it'll be ignored while a profile exists).
+4. Restart the MCP server.
+
+Headless users (no display) cannot run `linkedin-mcp login` interactively. For those:
+- **Option A:** Create the profile on a local machine, then `scp -r ~/.linkedin-mcp/profile user@server:~/.linkedin-mcp/profile` to the server.
+- **Option B:** Keep using `LI_AT` env var as before — the fallback path is preserved.
+
 ## [0.2.0] — 2026-06-18
 
 ### Added
