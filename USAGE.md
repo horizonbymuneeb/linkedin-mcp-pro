@@ -1,6 +1,6 @@
 # linkedin-mcp-pro — Usage Guide
 
-> Practical examples for using linkedin-mcp-pro with Claude Desktop, Cursor, Windsurf, or any MCP-compatible client.
+> Practical examples for using linkedin-mcp-pro with any MCP-compatible client (Claude Desktop, Cursor, Windsurf, VS Code, etc.).
 
 This guide shows you **what to type** in your MCP client and **what happens** behind the scenes. If you have not installed it yet, see [README.md](README.md) first.
 
@@ -20,13 +20,13 @@ This guide shows you **what to type** in your MCP client and **what happens** be
 
 ## Quick start (60 seconds)
 
-After running `linkedin-mcp login` once (see [Setup and authentication](#setup-and-authentication)), the server is ready. Just talk to your MCP client (Claude Desktop, Cursor, etc.) in natural language. The LLM picks the right tools automatically.
+After running `linkedin-mcp login` once (see [Setup and authentication](#setup-and-authentication)), the server is ready. Just talk to your MCP client in natural language. The client picks the right tools automatically.
 
 **You type:**
 
 > "Search for 5 AI/ML engineers in Stockholm and tell me about their backgrounds."
 
-**What the LLM does (you don't see this):**
+**What the client does (you don't see this):**
 
 ```
 1. search_people(keywords="AI", location="Stockholm", limit=5)
@@ -40,7 +40,7 @@ After running `linkedin-mcp login` once (see [Setup and authentication](#setup-a
 > 1. **Anna Lindberg** — Senior ML Engineer at Spotify. Works on music recommendation systems. Recently posted about LLM evaluation...
 > 2. **Erik Johansson** — AI Research Scientist at Klarna. Background in NLP and vector search...
 
-That's it. The LLM is your interface. You don't call tools directly.
+That's it. The MCP client is your interface. You don't call tools directly.
 
 ---
 
@@ -102,10 +102,10 @@ Override with `LINKEDIN_MCP_PROFILE_DIR=/custom/path` in `.env`.
 
 **What happens:**
 
-1. LLM drafts the post text with code formatting
-2. LLM calls `create_post(text="...", visibility="PUBLIC", dry_run=true)` first to show you a preview
+1. client drafts the post text with code formatting
+2. client calls `create_post(text="...", visibility="PUBLIC", dry_run=true)` first to show you a preview
 3. You confirm ("looks good, post it")
-4. LLM calls `create_post(text="...", visibility="PUBLIC", dry_run=false)` to actually post
+4. client calls `create_post(text="...", visibility="PUBLIC", dry_run=false)` to actually post
 
 **The post body looks like this:**
 
@@ -122,7 +122,7 @@ Result: passes HumanEval at 62% (base was 34%)
 
 Code + dataset: github.com/yourname/yourrepo
 
-#AI #LLM #OpenSource
+#OpenSource
 ```
 
 **Things to mention in your prompt for better results:**
@@ -141,11 +141,11 @@ Code + dataset: github.com/yourname/yourrepo
 
 **What happens:**
 
-1. LLM calls `search_people(keywords="product manager", location="San Francisco", limit=20)`
-2. LLM filters to those with AI/ML in headline
-3. LLM calls `get_profile(public_id)` for each to gather personalization context
-4. LLM drafts a unique note for each person (varies the wording so they're not identical)
-5. LLM calls `send_connection_request(public_id, note)` one at a time
+1. client calls `search_people(keywords="product manager", location="San Francisco", limit=20)`
+2. client filters to those with AI/ML in headline
+3. client calls `get_profile(public_id)` for each to gather personalization context
+4. client drafts a unique note for each person (varies the wording so they're not identical)
+5. client calls `send_connection_request(public_id, note)` one at a time
 6. Safety layer enforces your 5/day cap, blocks the rest with a clear message
 
 **What the notes look like:**
@@ -160,7 +160,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 - The note style: "personalized", "short and casual", "mention their company", or "no note at all"
 - A daily cap: "5 per day" or "spread over a week"
 
-**Important:** The LLM will use `dry_run=true` by default for safety. You'll see a preview like:
+**Important:** The client will use `dry_run=true` by default for safety. You'll see a preview like:
 
 > I'll send these 5 connection requests (preview):
 > 1. To **Anna L.** (Spotify, Senior ML) — note: "Hi Anna..."
@@ -178,19 +178,19 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `search_jobs(keywords="AI engineer", location="Sweden", limit=10)`
+1. client calls `search_jobs(keywords="AI engineer", location="Sweden", limit=10)`
 2. Returns raw job data
-3. LLM summarizes: company, title, posted date, key requirements
+3. client summarizes: company, title, posted date, key requirements
 
 **Other search prompts:**
 
 > "Show me the 5 most recent posts from my connections about machine learning."
 
-→ Uses `get_feed(limit=5)` + LLM filters by topic.
+→ Uses `get_feed(limit=5)` + client filters by topic.
 
 > "Who are the founders of Series A AI startups in Berlin?"
 
-→ Uses `search_companies(keywords="AI", location="Berlin")` + LLM filters by stage/role.
+→ Uses `search_companies(keywords="AI", location="Berlin")` + client filters by stage/role.
 
 > "Find recruiters at Google hiring for ML roles."
 
@@ -206,9 +206,9 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `get_profile(public_id="sundarpichai")`
+1. client calls `get_profile(public_id="sundarpichai")`
 2. Returns profile data
-3. LLM summarizes
+3. client summarizes
 
 **Note:** Profile data is read-only and uses LinkedIn's internal API (Voyager). Fast, no browser needed, doesn't count against any quota.
 
@@ -232,7 +232,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `send_message(public_id="anna-lindberg", text="...")`
+1. client calls `send_message(public_id="anna-lindberg", text="...")`
 2. Browser automation opens LinkedIn messaging
 3. Composes and sends
 4. Returns confirmation
@@ -259,7 +259,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `comment_on_post(target=url, text="...")` 
+1. client calls `comment_on_post(target=url, text="...")` 
 2. Browser navigates to the post URL
 3. Finds the comment textbox, fills it
 4. Clicks Post
@@ -271,7 +271,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `react_to_post(target=url, reaction_type="LIKE")` for the first
+1. client calls `react_to_post(target=url, reaction_type="LIKE")` for the first
 2. Calls `get_feed(limit=5)` to find the AI post
 3. Calls `react_to_post(target=urn, reaction_type="CELEBRATE")` for the second
 
@@ -289,7 +289,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `create_post(text="New office setup! 🚀", media_path="/home/me/photo.jpg", visibility="PUBLIC")`
+1. client calls `create_post(text="New office setup! 🚀", media_path="/home/me/photo.jpg", visibility="PUBLIC")`
 2. Browser navigates to /feed/
 3. Clicks "Start a post"
 4. Fills the caption
@@ -304,7 +304,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 > "Show me a preview of a post with the image /tmp/screenshot.png first."
 
-→ Uses `dry_run=true` — LLM shows what would be posted, doesn't actually post.
+→ Uses `dry_run=true` — client shows what would be posted, doesn't actually post.
 
 ---
 
@@ -316,7 +316,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `delete_post(target=url)` (with safety check)
+1. client calls `delete_post(target=url)` (with safety check)
 2. Browser navigates to the post
 3. Opens the "..." overflow menu
 4. Clicks "Delete"
@@ -335,8 +335,8 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 **What happens:**
 
-1. LLM calls `search_people(keywords="ML engineer", current_company="Spotify", limit=5)`
-2. For each result, LLM calls `send_connection_request(public_id=..., note=connect.pick_note(...))`
+1. client calls `search_people(keywords="ML engineer", current_company="Spotify", limit=5)`
+2. For each result, client calls `send_connection_request(public_id=..., note=connect.pick_note(...))`
 3. **Note variation:** The 5 notes are all different (rotated from templates), so LinkedIn can't fingerprint them as automated
 4. Safety layer caps at 5/day
 
@@ -354,7 +354,7 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 ## Prompting tips
 
-The LLM is good at understanding natural language, but you get better results with specific prompts.
+The client is good at understanding natural language, but you get better results with specific prompts.
 
 ### Be specific about the goal
 
@@ -377,25 +377,25 @@ For anything that posts, sends, or messages, you can ask:
 
 > "Show me a preview first, don't actually send."
 
-The LLM will use `dry_run=true` and show you the exact action before doing it.
+The client will use `dry_run=true` and show you the exact action before doing it.
 
 ### Chain actions
 
 > "1) Search for AI recruiters in Sweden. 2) Read their profiles. 3) Draft 3 unique connection notes for the most relevant ones. 4) Show me the drafts before sending."
 
-The LLM handles multi-step plans naturally.
+The client handles multi-step plans naturally.
 
 ### Reference previous results
 
 > "Take those 5 people from the last search and send them connection requests."
 
-The LLM has conversation memory, so it can chain.
+The client has conversation memory, so it can chain.
 
 ---
 
 ## Safety defaults
 
-These are enforced at the database level — they cannot be bypassed by the LLM.
+These are enforced at the database level — they cannot be bypassed by the client.
 
 | Action | Daily cap | Notes |
 |---|---|---|
@@ -412,7 +412,7 @@ These are enforced at the database level — they cannot be bypassed by the LLM.
 - **Warmup mode** — If your account is new, caps are lower for the first 4 weeks
 - **Audit log** — Every action is logged to a local SQLite database
 
-If you hit a cap, the LLM will tell you:
+If you hit a cap, the client will tell you:
 
 > "You've used all 20 connection requests for today. You can send more tomorrow, or I can queue them for the next 5 business days."
 
@@ -443,8 +443,8 @@ When the safety layer detects a challenge, it raises `BrowserChallenge`:
 1. The MCP tool call raises `BrowserChallenge` and pauses.
 2. The browser window stays open (do **not** close it) — it has the live challenge page loaded.
 3. Solve the captcha / enter the 2FA code / click "verify" — whatever LinkedIn asks for.
-4. After the page returns to the normal feed, tell the LLM: "I solved the challenge, please retry."
-5. The LLM retries the same tool call. It now succeeds because the session is authenticated.
+4. After the page returns to the normal feed, tell the client: "I solved the challenge, please retry."
+5. The client retries the same tool call. It now succeeds because the session is authenticated.
 
 **Things to know:**
 - The browser window is real (visible) — it's not a screenshot or popup. You can interact with it directly.
@@ -487,9 +487,9 @@ LinkedIn's UI changed slightly. The browser automation uses accessibility tree r
 
 **Workaround:** Wait 24h and retry. If persistent, file an issue with the page URL.
 
-### "No tools available" in Claude Desktop
+### "No tools available" in the MCP client
 
-Your `claude_desktop_config.json` doesn't have the MCP server registered. See [README.md](README.md) → "Usage with Claude Desktop".
+Your MCP client config file doesn't have the server registered. See `examples/mcp_client_config.json` for a template, and [README.md](README.md) → "Usage with an MCP client".
 
 ### Posts are not appearing
 
