@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linkedin-mcp-pro"
-version = "0.4.2"
+version = "0.5.0"
 description = "Open-source MCP server for LinkedIn — profiles, search, jobs, posts, connections, messages. Self-hosted, ban-safe, MIT licensed."
 readme = "README.md"
 license = {text = "MIT"}
@@ -34,6 +34,7 @@ dependencies = [
     "pydantic-settings>=2.2",
     "tenacity>=8.2",            # retries
     "rich>=13.7",               # pretty logging
+    "PyYAML>=6.0",              # post templates (v0.5.0)
     # NOTE: For write actions, we use `agent-browser` (Vercel Labs,
     # Apache-2.0, 36k+ stars) — a Rust CLI that drives real Chrome.
     # Install separately:
@@ -57,6 +58,7 @@ linkedin-mcp-pro = "linkedin_mcp.server:main"
 linkedin-mcp-health = "linkedin_mcp.cli:health"
 linkedin-mcp-stats = "linkedin_mcp.cli:stats"
 linkedin-mcp-login = "linkedin_mcp.cli:login"
+linkedin-mcp-templates = "linkedin_mcp.cli_templates:main"
 
 [project.urls]
 Homepage = "https://github.com/horizonbymuneeb/linkedin-mcp-pro"

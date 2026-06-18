@@ -399,6 +399,96 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    # =================== TEMPLATES (v0.5.0) ===================
+    {
+        "name": "list_templates",
+        "description": (
+            "List all saved LinkedIn post templates (name, description, tags). "
+            "Templates live in ~/.linkedin-mcp/templates/ by default; override "
+            "with LINKEDIN_MCP_TEMPLATES_DIR."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "get_template",
+        "description": "Return one template's full YAML document (name, body, tags, default_vars).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Template name."},
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "render_template",
+        "description": (
+            "Render a template's body with the given variables. "
+            "Built-in variables {date}, {time}, {day_of_week}, {week_number}, "
+            "{month}, {year} are auto-filled. With strict=true, missing "
+            "variables raise an error instead of being left verbatim."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string", "description": "Template name."},
+                "variables": {
+                    "type": "object",
+                    "description": "Variable substitution map (key -> string).",
+                    "additionalProperties": {"type": "string"},
+                    "default": {},
+                },
+                "strict": {
+                    "type": "boolean",
+                    "default": False,
+                    "description": "If true, fail when a {var} placeholder has no value.",
+                },
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "save_template",
+        "description": (
+            "Create or overwrite a post template. Body may contain {variable} "
+            "placeholders. Tags are searchable labels; default_vars are values "
+            "filled in at render time unless overridden by the caller."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "body": {"type": "string"},
+                "description": {"type": "string", "default": ""},
+                "tags": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "default": [],
+                },
+                "default_vars": {
+                    "type": "object",
+                    "additionalProperties": {"type": "string"},
+                    "default": {},
+                },
+            },
+            "required": ["name", "body"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "delete_template",
+        "description": "Delete a saved template by name.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
     # =================== STATS ===================
     {
         "name": "get_daily_stats",
@@ -617,6 +707,40 @@ async def _dispatch_stats(name: str, args: dict) -> Any:
     raise ValueError(f"Unknown stats tool: {name}")
 
 
+async def _dispatch_templates(name: str, args: dict) -> Any:
+    """Dispatcher for the post-template tools (v0.5.0).
+
+    All five tools are metadata-only — they touch the filesystem, not
+    LinkedIn — so they bypass the SafetyGuard. Use ``render_template``
+    + ``create_post`` (which IS safety-enforced) to actually publish.
+    """
+    # Lazy import keeps server importable even if PyYAML is missing
+    # (templates module pulls in yaml).
+    from .tools import templates as _tpl_tools
+
+    if name == "list_templates":
+        return _tpl_tools.list_templates()
+    if name == "get_template":
+        return _tpl_tools.get_template(args["name"])
+    if name == "render_template":
+        return _tpl_tools.render_template(
+            name=args["name"],
+            variables=args.get("variables") or {},
+            strict=bool(args.get("strict", False)),
+        )
+    if name == "save_template":
+        return _tpl_tools.save_template(
+            name=args["name"],
+            body=args["body"],
+            description=args.get("description", ""),
+            tags=args.get("tags") or [],
+            default_vars=args.get("default_vars") or {},
+        )
+    if name == "delete_template":
+        return _tpl_tools.delete_template(args["name"])
+    raise ValueError(f"Unknown template tool: {name}")
+
+
 # ----------------------------------------------------------------------------
 # MCP server wiring
 # ----------------------------------------------------------------------------
@@ -655,8 +779,17 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         # Stats
         elif name in ("get_daily_stats", "get_audit_log"):
             data = await _dispatch_stats(name, arguments)
+        # Templates (v0.5.0) — metadata-only, no safety guard.
+        elif name in (
+            "list_templates",
+            "get_template",
+            "render_template",
+            "save_template",
+            "delete_template",
+        ):
+            data = await _dispatch_templates(name, arguments)
         else:
-            return [TextContent(type="text", text=f"Unknown tool: {name}")]
+            return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
         # Render response
         if isinstance(data, (dict, list)):
