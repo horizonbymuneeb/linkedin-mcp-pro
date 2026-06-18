@@ -983,6 +983,8 @@ async def _dispatch_analytics(name: str, args: dict) -> Any:
     """
     from .analytics import Analytics
     from .tools import analytics as _an_tools
+    from .tools import best_time as _bt_tools
+    from .tools import multi_account as _acc_tools
 
     _, db, _ = state()
     a = Analytics(db)
@@ -1001,6 +1003,26 @@ async def _dispatch_analytics(name: str, args: dict) -> Any:
     if name == "get_analytics_summary":
         return a.summary(days=args.get("days", 30))
     raise ValueError(f"Unknown analytics tool: {name}")
+
+
+async def _dispatch_accounts(name: str, args: dict) -> Any:
+    """Dispatcher for the multi-account tools (v0.6.0)."""
+    from .tools import multi_account as _acc_tools
+    if name == "list_accounts":
+        return _acc_tools.list_accounts()
+    if name == "register_account":
+        return _acc_tools.register_account(
+            name=args["name"],
+            profile_dir=args["profile_dir"],
+            description=args.get("description", ""),
+        )
+    if name == "remove_account":
+        return _acc_tools.remove_account(args["name"])
+    if name == "set_active_account":
+        return _acc_tools.set_active_account(args["name"])
+    if name == "get_active_account":
+        return _acc_tools.get_active_account()
+    raise ValueError(f"Unknown accounts tool: {name}")
 
 
 # ----------------------------------------------------------------------------
@@ -1078,6 +1100,18 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             "get_analytics_summary",
         ):
             data = await _dispatch_analytics(name, arguments)
+        # Best-time analyzer (v0.6.0) — read-only, no safety guard.
+        elif name == "get_best_posting_times":
+            data = _bt_tools.get_best_posting_times(days=int(arguments.get("days", 90)))
+        # Multi-account (v0.6.0) — file-backed, no safety guard.
+        elif name in (
+            "list_accounts",
+            "register_account",
+            "remove_account",
+            "set_active_account",
+            "get_active_account",
+        ):
+            data = await _dispatch_accounts(name, arguments)
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
