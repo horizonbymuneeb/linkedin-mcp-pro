@@ -8,6 +8,16 @@
 
 ---
 
+## Documentation
+
+- **[USAGE.md](USAGE.md)** — practical examples, prompting tips, troubleshooting
+- **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — how the pieces fit together
+- **[docs/SAFETY.md](docs/SAFETY.md)** — ban-prevention design and rationale
+- **[docs/CONTRIBUTING.md](docs/CONTRIBUTING.md)** — how to contribute
+- **[CHANGELOG.md](CHANGELOG.md)** — version history
+
+---
+
 ## What is it?
 
 linkedin-mcp-pro is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes your LinkedIn account as 23 tools for any MCP-compatible client — while keeping you in control of *how* those tools act on your behalf.
