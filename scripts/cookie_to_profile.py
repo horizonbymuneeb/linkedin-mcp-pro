@@ -228,7 +228,7 @@ async def build_profile(cookie: str, profile_dir: str, proxy: str) -> int:
             return 1
 
         # Export the FULL session state to state.json
-        state_path = pp / "state.json"
+        state_path = pp / "storage_state.json"
         state = await ctx.storage_state(path=str(state_path))
         print(f"\n\u2192 exported state to {state_path}")
         with open(state_path) as f:

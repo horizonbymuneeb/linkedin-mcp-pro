@@ -9,12 +9,13 @@ This guide shows you **what to type** in your MCP client and **what happens** be
 ## Table of contents
 
 1. [Quick start (60 seconds)](#quick-start-60-seconds)
-2. [Setup and authentication](#setup-and-authentication)
+2. [Setup and authentication](#setup-and-authentication) — pick the option that fits
 3. [Common workflows](#common-workflows)
 4. [Prompting tips](#prompting-tips)
 5. [Safety defaults](#safety-defaults)
 6. [Handling security checks (captcha / 2FA)](#handling-security-checks-captcha--2fa)
 7. [Troubleshooting](#troubleshooting)
+8. [Authentication options (v0.4+)](#authentication-options-v04) — 4 ways to set up
 
 ---
 
@@ -46,39 +47,79 @@ That's it. The MCP client is your interface. You don't call tools directly.
 
 ## Setup and authentication
 
-linkedin-mcp-pro v0.3.0 uses a **persistent browser session** — you log in once through a real browser, and that session is reused for every subsequent call. No more 7-day cookie expiry pain.
+linkedin-mcp-pro v0.4 supports **4 authentication modes**. Pick the one that fits your setup:
 
-### Recommended: one-time browser login
+| Mode | Setup | Cookie lifetime | Best for |
+|---|---|---|---|
+| **A. Profile sync** | 5 min, one-time | 6-12 months | Most users (laptop + server) |
+| **B. `linkedin-mcp login`** | 2 min | 6-12 months | Local machines (have a display) |
+| **C. Cookie → Profile** | 30 sec, one-time | 6-12 months | Quick path: cookie paste → auto-build |
+| **D. `LI_AT` cookie** | 1 min, recurring | 1-7 days | Headless / CI / emergency fallback |
+
+---
+
+### Option A — Profile sync (recommended for remote servers)
+
+On your **laptop** (one time):
+```bash
+git clone https://github.com/horizonbymuneeb/linkedin-mcp-pro
+cd linkedin-mcp-pro
+./scripts/bootstrap_session.sh
+# → auto-detects Chrome profile, packages it, syncs to your server
+```
+
+On the **server**, from now on it's automatic — no cookie management.
+
+📖 See [`docs/PROXY_SETUP.md`](docs/PROXY_SETUP.md) for setting up the SOCKS tunnel.
+
+### Option B — `linkedin-mcp login` (local machines)
 
 ```bash
 linkedin-mcp login
+# → Chromium opens, log in normally, profile saved to ~/.linkedin-mcp/profile/
+linkedin-mcp-pro    # start the MCP server
 ```
 
 What happens:
 1. A browser window opens to the LinkedIn login page (Chromium, headless=False).
-2. You log in normally: email + password, then any 2FA / SMS / authenticator prompt LinkedIn shows.
+2. You log in normally: email + password, then any 2FA / SMS / authenticator prompt.
 3. Once you reach the feed, the server saves the browser profile to `~/.linkedin-mcp/profile/` and closes the window.
-4. From now on, every MCP call uses that profile. Cookies refresh automatically (the browser handles rotation — `li_at` is typically valid for months, not the old 7-day window).
+4. Every MCP call from now on uses that profile. Cookies refresh automatically.
 
-The profile is a normal Chromium user-data-dir, so:
-- It's portable (you can `tar` it, copy it to another machine, mount it in Docker).
-- It's the same profile you can open in Chrome yourself with `chromium --user-data-dir=~/.linkedin-mcp/profile` for debugging.
+### Option C — Cookie → Profile conversion (fastest bootstrap)
 
-### Fallback: `LI_AT` env var (headless / CI only)
+If you already have a working `li_at` cookie, build a self-updating profile in 30 seconds:
 
-If you can't open a browser — remote server, Docker container without X, CI runner — set `LI_AT` as before:
+```bash
+# 1. Save the cookie
+echo "LI_AT=AQED..." | sudo tee /etc/linkedin-mcp-pro/li_at > /dev/null
+sudo chmod 640 /etc/linkedin-mcp-pro/li_at
+
+# 2. Build the profile (one time, ~30 sec)
+python3 scripts/cookie_to_profile.py
+# → exports storage_state.json with 30+ LinkedIn cookies (li_at, JSESSIONID, bcookie, ...)
+
+# 3. From now on, the profile is used automatically
+python3 scripts/post_with_stealth.py --check   # verify
+python3 scripts/post_with_stealth.py            # post
+```
+
+This is the path of least resistance for users who already have a working cookie but are tired of pasting it every few days. Works with the MCP server too (the package's `has_valid_session()` checks for `storage_state.json`).
+
+### Option D — `LI_AT` cookie (headless / emergency)
+
+If you can't run any of the above — pure headless, no laptop, emergency:
 
 ```bash
 # .env
 LI_AT=your-li_at-value-here
+# OR
+LI_AT_FILE=/etc/linkedin-mcp-pro/li_at
 ```
 
-The browser session is still tried first. `LI_AT` is only used when no profile exists at `~/.linkedin-mcp/profile/`.
+Get the value: DevTools → Application → Cookies → `https://www.linkedin.com` → `li_at`.
 
-To get a value for `LI_AT`:
-1. Log into LinkedIn in any browser.
-2. DevTools → Application → Cookies → `https://www.linkedin.com` → `li_at`.
-3. Copy the value into `.env`.
+The browser session is still tried first; `LI_AT` is only used when no profile exists. **Cookie lifetime in this mode is 1-7 days** — repeat when it expires.
 
 ### Profile location
 
@@ -89,6 +130,53 @@ To get a value for `LI_AT`:
 | Windows | `%USERPROFILE%\.linkedin-mcp\profile\` |
 
 Override with `LINKEDIN_MCP_PROFILE_DIR=/custom/path` in `.env`.
+
+### Proxy setup (required if your server is on a datacenter IP)
+
+If your server runs on AWS, GCP, DigitalOcean, etc., LinkedIn will block you. Set `LINKEDIN_MCP_PROXY`:
+
+```bash
+# SOCKS via SSH to your laptop
+LINKEDIN_MCP_PROXY=socks5://127.0.0.1:1080
+
+# SOCKS via cloudflared tunnel
+LINKEDIN_MCP_PROXY=socks5://127.0.0.1:1080  # same, EC2 has cloudflared listener
+
+# Termux phone
+LINKEDIN_MCP_PROXY=socks5://127.0.0.1:1080  # same pattern
+
+# Residential proxy service
+LINKEDIN_MCP_PROXY=socks5://user:pass@proxy.example.com:22225
+```
+
+📖 Full guide with 5 options, diagrams, step-by-step: [`docs/PROXY_SETUP.md`](docs/PROXY_SETUP.md)
+
+---
+
+## Authentication options (v0.4+)
+
+Quick summary of all 4 modes in one place:
+
+```
+Which option should I pick?
+│
+├─ I have a laptop with Chrome logged into LinkedIn
+│   └─ → Option A (Profile sync) ⭐ recommended
+│
+├─ My server is local (I can open a browser on it)
+│   └─ → Option B (linkedin-mcp login)
+│
+├─ I already have a working li_at cookie
+│   └─ → Option C (Cookie → Profile) ⭐ fastest
+│
+├─ Pure headless, no profile possible
+│   └─ → Option D (LI_AT env var)
+│
+└─ I want to switch later
+    └─ Just rebuild: rm -rf ~/.linkedin-mcp/profile && run A/B/C
+```
+
+Whichever you pick, the resulting profile lasts **6-12 months** before LinkedIn forces re-auth. The standalone scripts (`scripts/post_with_stealth.py`, `scripts/use_profile_session.py`) and the MCP server (`linkedin-mcp-pro`) all read from the same `~/.linkedin-mcp/profile/` directory automatically.
 
 ---
 

@@ -5,6 +5,37 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.2] — 2026-06-18
+
+### Fixed (critical for new users)
+- **Profile filename mismatch between scripts and package.** The package's
+  `linkedin_mcp.browser.auth.has_valid_session()` looked for
+  `storage_state.json`, but `scripts/cookie_to_profile.py` was writing
+  `state.json`. A user who built their profile via the script would have
+  an undetectable profile for the MCP server. Both filenames are now
+  accepted; `cookie_to_profile.py` was updated to write the canonical
+  `storage_state.json` matching what `agent-browser` produces.
+- **`__init__.py` version was 0.1.0** despite being on v0.4.1. Bumped to
+  `0.4.1` so `python -c "import linkedin_mcp; print(linkedin_mcp.__version__)"`
+  reports the right number.
+- **`linkedin_mcp/browser/client.py` hardcoded `socks5://127.0.0.1:1080`**
+  as the proxy, with no way for users to override. Now reads `LINKEDIN_MCP_PROXY`
+  (same env var the standalone scripts use) with fallback to the hardcoded
+  default. Users with residential proxies can now configure the package the
+  same way they configure the scripts.
+
+### Documentation
+- **`.env.example`**: added the `LINKEDIN_MCP_PROFILE_DIR` and
+  `LINKEDIN_MCP_PROXY` env vars with explanations and example values.
+- **`examples/mcp_client_config.json`**: rewritten as a fully-commented
+  template showing all 4 auth options, the proxy var, and the safety
+  defaults. Compatible with Claude Desktop, Cursor, Windsurf, VS Code,
+  and Claude Code.
+- **`USAGE.md`**: was still v0.3-era ("one-time browser login" only).
+  Updated to show all 4 auth modes (A: profile sync, B: linkedin-mcp
+  login, C: cookie → profile, D: LI_AT cookie) with decision tree.
+  Also added the proxy setup section.
+
 ## [0.4.1] — 2026-06-18
 
 ### Added

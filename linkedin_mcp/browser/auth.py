@@ -29,22 +29,29 @@ log = logging.getLogger("linkedin_mcp.browser.auth")
 
 
 def has_valid_session(profile_dir: Path) -> bool:
-    """True if the profile dir has a storage_state.json with a li_at cookie.
+    """True if the profile dir has a storage_state.json (or state.json)
+    with a li_at cookie.
 
     We check for li_at because it's the most reliable indicator that the
     LinkedIn session is established. Other cookies (JSESSIONID, etc.) are
     also present but li_at is the canonical one.
+
+    Both filenames accepted for backward compatibility with v0.4.0/v0.4.1
+    scripts: storage_state.json is the package convention (matches what
+    agent-browser produces); state.json is what scripts/cookie_to_profile.py
+    writes when run via Playwright directly.
     """
-    state_file = profile_dir / "storage_state.json"
-    if not state_file.exists():
-        return False
-    try:
-        state = json.loads(state_file.read_text())
-    except (json.JSONDecodeError, OSError):
-        return False
-    for cookie in state.get("cookies", []):
-        if cookie.get("name") == "li_at" and cookie.get("value"):
-            return True
+    for name in ("storage_state.json", "state.json"):
+        state_file = profile_dir / name
+        if not state_file.exists():
+            continue
+        try:
+            state = json.loads(state_file.read_text())
+        except (json.JSONDecodeError, OSError):
+            continue
+        for cookie in state.get("cookies", []):
+            if cookie.get("name") == "li_at" and cookie.get("value"):
+                return True
     return False
 
 

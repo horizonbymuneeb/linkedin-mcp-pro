@@ -1,13 +1,22 @@
 {
+  "_comment": "linkedin-mcp-pro v0.4 — open-source LinkedIn MCP. Works with any MCP-compatible client (Claude Desktop, Cursor, Windsurf, VS Code, Claude Code CLI). See https://github.com/horizonbymuneeb/linkedin-mcp-pro",
   "mcpServers": {
     "linkedin": {
-      "_comment": "linkedin-mcp-pro — open-source LinkedIn MCP. See https://github.com/horizonbymuneeb/linkedin-mcp-pro",
       "command": "linkedin-mcp-pro",
       "env": {
+        "//  — Auth (pick one) —": "",
         "LI_AT_FILE": "/etc/linkedin-mcp-pro/li_at",
+        "LINKEDIN_MCP_PROFILE_DIR": "~/.linkedin-mcp/profile",
+
+        "//  — Proxy (required if your server is on a datacenter IP) —": "",
+        "LINKEDIN_MCP_PROXY": "socks5://127.0.0.1:1080",
+
+        "//  — Safety defaults —": "",
         "DAILY_LIMIT_CONNECTION_REQUESTS": "20",
         "DAILY_LIMIT_POSTS": "2",
         "DAILY_LIMIT_MESSAGES": "30",
+        "DAILY_LIMIT_COMMENTS": "30",
+        "DAILY_LIMIT_REACTIONS": "100",
         "BUSINESS_HOURS_START": "9",
         "BUSINESS_HOURS_END": "20",
         "WARMUP_ENABLED": "true",
