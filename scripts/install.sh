@@ -27,4 +27,4 @@ python3 -m venv .venv
 .venv/bin/linkedin-mcp-health
 ```
 
-If all green, point your MCP client (Claude Desktop, Cursor, etc.) at the `linkedin-mcp-pro` command in the venv.
+If all green, point your MCP client (Claude Desktop, Cursor, Windsurf, etc.) at the `linkedin-mcp-pro` command in the venv.

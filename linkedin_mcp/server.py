@@ -14,7 +14,7 @@ Architecture:
   - Audit log records every action (dry-run or real)
 
 Run modes:
-  - stdio (default, for Claude Desktop / Cursor)
+  - stdio (default, for Claude Desktop / Cursor / Windsurf)
   - streamable-http (for remote clients, set MCP_TRANSPORT=streamable-http)
 """
 

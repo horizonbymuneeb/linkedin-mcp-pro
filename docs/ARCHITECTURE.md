@@ -7,9 +7,11 @@ through reads, writes, safety, and storage.
 
 ```
                         ┌─────────────────────────┐
-   Claude / Cursor      │  MCP client             │
-   (any MCP-compatible) │  (stdio / stream-http)  │
-                        └──────────┬──────────────┘
+   MCP client (any)     │  sends JSON-RPC to      │
+                        │  `server.py`            │
+   (Claude Desktop,     │  (stdio / stream-http)  │
+    Cursor, Windsurf,   └──────────┬──────────────┘
+    any MCP-compatible)            │
                                    │ JSON-RPC
                                    ▼
                         ┌─────────────────────────┐
@@ -71,7 +73,7 @@ linkedin_mcp/
 
 `send_connection_request(public_id="alice", note="hi")`:
 
-1. **MCP client** (Claude) sends JSON-RPC to `server.py`
+1. **MCP client** sends JSON-RPC to `server.py`
 2. **`server.call_tool()`** routes to `_dispatch_write`
 3. **Build `ActionPlan`** with action="connection", target="linkedin.com/in/alice"
 4. **`guard.enforce(plan)`** runs three checks:

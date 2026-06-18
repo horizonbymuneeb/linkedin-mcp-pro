@@ -6,7 +6,7 @@ Open-source MCP server for LinkedIn — profiles, search, jobs, posts, connectio
 
 ## What is it?
 
-A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that gives Claude, Cursor, Windsurf, and any MCP-compatible AI assistant full access to your LinkedIn account — with **ban-prevention built in** (daily caps, jitter, business hours, captcha detection).
+A [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes your LinkedIn account as 23 tools for any MCP client — with **ban-prevention built in** (daily caps, jitter, business hours, captcha detection).
 
 **22 tools** | **Python 3.11+** | **MIT License**
 
