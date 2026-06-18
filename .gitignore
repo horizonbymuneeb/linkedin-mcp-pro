@@ -62,3 +62,5 @@ node_modules/
 .pytest_cache/
 test-results/
 playwright-report/
+.env.bak
+*.bak
