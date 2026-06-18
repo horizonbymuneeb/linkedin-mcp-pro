@@ -59,6 +59,7 @@ linkedin-mcp-health = "linkedin_mcp.cli:health"
 linkedin-mcp-stats = "linkedin_mcp.cli:stats"
 linkedin-mcp-login = "linkedin_mcp.cli:login"
 linkedin-mcp-templates = "linkedin_mcp.cli_templates:main"
+linkedin-mcp-deadman = "linkedin_mcp.cli_deadman:main"
 
 [project.urls]
 Homepage = "https://github.com/horizonbymuneeb/linkedin-mcp-pro"

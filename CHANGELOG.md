@@ -5,6 +5,35 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] — 2026-06-18
+
+### Added (Tier 1)
+
+- **Post Templates (`linkedin_mcp/templates.py`)** — Reusable post templates
+  with `{variable}` placeholders, stored as YAML files in
+  `~/.linkedin-mcp/templates/`. Built-in variables auto-fill: `{date}`,
+  `{time}`, `{day_of_week}`, `{week_number}`, `{month}`, `{year}`.
+  CLI: `linkedin-mcp templates {list,show,render,new,delete,import,export}`.
+  MCP tools: `list_templates`, `get_template`, `render_template`,
+  `save_template`, `delete_template`. Custom `_BraceTemplate` subclass
+  overrides `string.Template`'s pattern to consume the closing brace
+  (Python stdlib treats `}` as a literal by default). 47 new tests.
+
+- **Dead-man switch (`linkedin_mcp/deadman.py`)** — Tracks posting cadence
+  and fires Telegram alerts on long silence. Configurable threshold
+  (default 3 days) via `LINKEDIN_MCP_DEADMAN_THRESHOLD_DAYS`. Status
+  states: `ok` / `warning` / `alert` / `no_posts`. 24h alert cooldown
+  to prevent spam. Telegram via Bot API + `urllib` (no extra deps).
+  CLI: `linkedin-mcp deadman {status,check,test-alert,set-threshold}`.
+  MCP tools: `deadman_status`, `deadman_check_and_alert`, `deadman_test_alert`.
+  Systemd timer (`systemd/linkedin-mcp-deadman.{service,timer}`) runs
+  daily at 09:00 UTC. 30 new tests.
+
+### Fixed
+- **`string.Template` regex bug** — Custom brace-delimited pattern now
+  consumes the closing `}` so `{name}` renders as the variable value
+  (not `World}`).
+
 ## [0.4.2] — 2026-06-18
 
 ### Fixed (critical for new users)
