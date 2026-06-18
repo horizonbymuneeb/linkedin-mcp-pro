@@ -1,0 +1,64 @@
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.whl
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.mypy_cache/
+.ruff_cache/
+
+# Virtual envs
+venv/
+.venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Secrets — NEVER commit
+.env
+.env.local
+.env.*.local
+secrets/
+credentials/
+
+# LinkedIn cookies
+li_at
+jsessionid
+*.cookie
+
+# Database (contains user activity)
+data/
+*.db
+*.db-journal
+*.sqlite
+*.sqlite3
+
+# Logs
+logs/
+*.log
+
+# Local install artifacts
+agent-browser/
+node_modules/
+
+# Test artifacts
+.pytest_cache/
+test-results/
+playwright-report/
