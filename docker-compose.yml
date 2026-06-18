@@ -7,7 +7,7 @@ services:
       - .env
     volumes:
       - ./data:/app/data
-    # For stdio (Claude Desktop / Cursor), DO NOT expose ports.
+    # For stdio (any MCP-compatible client), DO NOT expose ports.
     # For HTTP transport, uncomment:
     # ports:
     #   - "8765:8765"

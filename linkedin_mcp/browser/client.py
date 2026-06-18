@@ -192,10 +192,15 @@ class BrowserClient:
         """Run an agent-browser command, return (rc, stdout, stderr)."""
         cmd = [self.binary, *args]
         log.debug("$ %s", " ".join(cmd))
+        # agent-browser uses the cwd as its profile directory, so we MUST
+        # launch it from inside self.profile_dir for cookie persistence.
         proc = await asyncio.create_subprocess_exec(
             *cmd,
+            cwd=str(self.profile_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
+            env={**os.environ, "ALL_PROXY": "socks5://127.0.0.1:1080",
+                 "AGENT_BROWSER_PROXY": "socks5://127.0.0.1:1080"},
         )
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)

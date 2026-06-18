@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "linkedin": {
-      "_comment": "linkedin-mcp-pro — open-source LinkedIn MCP. See https://github.com/your-org/linkedin-mcp-pro",
+      "_comment": "linkedin-mcp-pro — open-source LinkedIn MCP. See https://github.com/horizonbymuneeb/linkedin-mcp-pro",
       "command": "linkedin-mcp-pro",
       "env": {
         "LI_AT_FILE": "/etc/linkedin-mcp-pro/li_at",

@@ -42,7 +42,7 @@ linkedin-mcp-pro is a [Model Context Protocol (MCP)](https://modelcontextprotoco
 | **Self-hostable** | ✅ Docker / systemd / bare | ❌ |
 | **Ban safety** | Built-in (warmup, jitter, business hours) | Their responsibility |
 | **Rate limits** | You control (DB-enforced) | Their tier |
-| **MCP integration** | Any MCP client (Claude Desktop, Cursor, Windsurf, etc.) | Their dashboard |
+| **MCP integration** | Any MCP-compatible client (Claude Desktop, Cursor, Windsurf, VS Code, etc.) | Their dashboard |
 
 ---
 
@@ -214,9 +214,9 @@ The browser session is still tried first; `LI_AT` is only used when no profile e
 
 ---
 
-## Usage with Claude Desktop
+## Usage with an MCP client
 
-Add to your `claude_desktop_config.json`:
+Add the server to your MCP client config file. Path depends on the client (e.g. `claude_desktop_config.json` for Claude Desktop):
 
 ```json
 {
@@ -349,7 +349,7 @@ linkedin-mcp-pro/
 │   ├── SAFETY.md
 │   └── CONTRIBUTING.md
 ├── examples/
-│   └── claude_desktop_config.json
+│   └── mcp_client_config.json   # template for any MCP client
 ├── systemd/
 │   └── linkedin-mcp-pro.service
 ├── pyproject.toml

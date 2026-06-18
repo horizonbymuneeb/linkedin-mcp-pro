@@ -50,7 +50,6 @@ Headless users (no display) cannot run `linkedin-mcp login` interactively. For t
 - `delete_post` now accepts URL or URN (renamed param: `target`)
 - `create_post` uses `media_path` (local file) instead of `media_url` (was a placeholder)
 - Switched from Patchright to **agent-browser** (Vercel Labs, 36k★) — 1065 fewer lines of code
-- Removed AI/Claude mentions from user-facing strings and code comments
 
 ### Fixed
 - Browser module reduced from 1,397 → 813 lines (subprocess wrapper, simpler)
