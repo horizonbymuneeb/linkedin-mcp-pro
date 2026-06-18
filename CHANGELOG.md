@@ -5,6 +5,36 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] — 2026-06-18
+
+### Added (Tier 2)
+
+- **Post Analytics (`linkedin_mcp/analytics.py`)** — Read-only analytics
+  over the existing `audit_log` and `daily_quotas` tables. No new
+  tables, no writes — all queries are pure SELECT with stdlib
+  `datetime` math. Seven methods on the `Analytics` class:
+  - `post_volume(days=30)` — dense per-day `{date: count}` series.
+  - `post_success_rate(days=30)` — total / success / failed / dry_run
+    / blocked / rate roll-up.
+  - `quota_usage()` — today's per-action-type usage from
+    `daily_quotas`.
+  - `top_posting_hours(days=90)` — full 24-hour distribution
+    (zero-filled).
+  - `top_posting_days(days=90)` — full 7-day distribution by weekday
+    name.
+  - `recent_posts(limit=10)` — most recent `post` audit rows.
+  - `summary(days=30)` — one-call roll-up combining all of the above
+    plus the best hour / best day to post.
+
+  CLI: `linkedin-mcp-analytics {summary,volume,hours,days,quota,recent}`
+  with `--days` / `--limit` flags. Each subcommand renders a fixed-width
+  table with a histogram (`█` bar) so terminal output is glance-able.
+
+  MCP tools: `get_post_volume`, `get_post_success_rate`,
+  `get_quota_usage`, `get_top_posting_hours`, `get_top_posting_days`,
+  `get_recent_posts`, `get_analytics_summary`. All seven bypass the
+  SafetyGuard (read-only, no LinkedIn calls). 19 new tests.
+
 ## [0.5.0] — 2026-06-18
 
 ### Added (Tier 1)

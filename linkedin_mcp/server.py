@@ -600,6 +600,101 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    # =================== ANALYTICS (v0.6.0) ===================
+    {
+        "name": "get_post_volume",
+        "description": (
+            "Per-day count of post audits in the last ``days`` days (UTC). "
+            "Days with zero posts are included so the series is dense. "
+            "Returns {date: count}."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "default": 30, "minimum": 1, "maximum": 365},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_post_success_rate",
+        "description": (
+            "Roll-up of post outcomes in the last ``days`` days: total, "
+            "success, failed, dry_run, blocked, rate. Read-only."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "default": 30, "minimum": 1, "maximum": 365},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_quota_usage",
+        "description": (
+            "Today's per-action-type quota usage (raw counts from "
+            "daily_quotas). Caps are not joined in — use ``get_daily_stats`` "
+            "for cap-aware output."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "get_top_posting_hours",
+        "description": (
+            "Distribution of post audits by hour-of-day (0..23, UTC) over "
+            "the last ``days`` days. All 24 hours are present (zero-filled)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "default": 90, "minimum": 1, "maximum": 365},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_top_posting_days",
+        "description": (
+            "Distribution of post audits by weekday name (Monday..Sunday) "
+            "over the last ``days`` days. All seven days are present (zero-filled)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "default": 90, "minimum": 1, "maximum": 365},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_recent_posts",
+        "description": (
+            "Most recent ``limit`` post audit rows, newest first. Each row "
+            "has id, action, target, status, dry_run, detail, created_at."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "limit": {"type": "integer", "default": 10, "minimum": 1, "maximum": 200},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_analytics_summary",
+        "description": (
+            "One-call roll-up: success rate, today's quota, top hour, top "
+            "weekday. Read-only — no LinkedIn calls."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "days": {"type": "integer", "default": 30, "minimum": 1, "maximum": 365},
+            },
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -878,6 +973,36 @@ async def _dispatch_scheduler(name: str, args: dict) -> Any:
     raise ValueError(f"Unknown scheduler tool: {name}")
 
 
+async def _dispatch_analytics(name: str, args: dict) -> Any:
+    """Dispatcher for the post-analytics tools (v0.6.0).
+
+    All seven are read-only — they touch the local audit_log +
+    daily_quotas tables, never the network — so they bypass the
+    SafetyGuard. They share the long-lived DB from ``state()`` so we
+    don't open a new connection per call.
+    """
+    from .analytics import Analytics
+    from .tools import analytics as _an_tools
+
+    _, db, _ = state()
+    a = Analytics(db)
+    if name == "get_post_volume":
+        return a.post_volume(days=args.get("days", 30))
+    if name == "get_post_success_rate":
+        return a.post_success_rate(days=args.get("days", 30))
+    if name == "get_quota_usage":
+        return a.quota_usage()
+    if name == "get_top_posting_hours":
+        return a.top_posting_hours(days=args.get("days", 90))
+    if name == "get_top_posting_days":
+        return a.top_posting_days(days=args.get("days", 90))
+    if name == "get_recent_posts":
+        return a.recent_posts(limit=args.get("limit", 10))
+    if name == "get_analytics_summary":
+        return a.summary(days=args.get("days", 30))
+    raise ValueError(f"Unknown analytics tool: {name}")
+
+
 # ----------------------------------------------------------------------------
 # MCP server wiring
 # ----------------------------------------------------------------------------
@@ -942,6 +1067,17 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             "run_due_now",
         ):
             data = await _dispatch_scheduler(name, arguments)
+        # Analytics (v0.6.0) — read-only DB queries, no safety guard.
+        elif name in (
+            "get_post_volume",
+            "get_post_success_rate",
+            "get_quota_usage",
+            "get_top_posting_hours",
+            "get_top_posting_days",
+            "get_recent_posts",
+            "get_analytics_summary",
+        ):
+            data = await _dispatch_analytics(name, arguments)
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
