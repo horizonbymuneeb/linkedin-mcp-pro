@@ -1,0 +1,14 @@
+[Unit]
+Description=linkedin-mcp-pro scheduler — enqueue due posts
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -m linkedin_mcp.cli schedule run-due
+WorkingDirectory=/home/admin
+StandardOutput=journal
+StandardError=journal
+EnvironmentFile=-/etc/linkedin-mcp-pro/linkedin-mcp-pro.env
+
+[Install]
+WantedBy=multi-user.target

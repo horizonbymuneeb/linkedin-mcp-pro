@@ -34,6 +34,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   consumes the closing `}` so `{name}` renders as the variable value
   (not `World}`).
 
+### Added (Tier 1 cont.)
+- **Post scheduler (`linkedin_mcp/scheduler.py`)** — YAML-driven post
+  scheduler. Each schedule declares *when* (cron / one-shot / weekly
+  day+time) and *what* (template + vars, or direct text). Schedules
+  live in `~/.linkedin-mcp/schedule.yaml`. CLI: `linkedin-mcp schedule
+  {list,show,add,remove,enable,disable,run-due}`. MCP tools:
+  `list_schedules`, `add_schedule`, `remove_schedule`, `enable_schedule`,
+  `disable_schedule`, `run_due_now`. Worker (`scheduler_worker.py`)
+  drains the queue through SafetyGuard + create_post. Systemd timer
+  runs every 15 min (`systemd/linkedin-mcp-scheduler.{service,timer}`
+  + `*-worker.{service,timer}`). 20 new tests.
+
 ## [0.4.2] — 2026-06-18
 
 ### Fixed (critical for new users)

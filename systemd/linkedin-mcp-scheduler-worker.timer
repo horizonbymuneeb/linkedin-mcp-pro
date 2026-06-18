@@ -1,0 +1,10 @@
+[Unit]
+Description=Run linkedin-mcp-pro scheduler worker every 15 minutes
+
+[Timer]
+OnCalendar=*:1/15
+Persistent=true
+Unit=linkedin-mcp-scheduler-worker.service
+
+[Install]
+WantedBy=timers.target
