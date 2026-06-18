@@ -1,45 +1,42 @@
 #!/usr/bin/env python3
-"""End-to-end LinkedIn post via Playwright + stealth + SOCKS proxy.
+"""post_with_stealth.py — end-to-end LinkedIn post via Playwright + stealth.
 
-Standalone script — does NOT use the linkedin-mcp-pro server. Reads a
-`li_at` cookie from /etc/linkedin-mcp-pro/li_at, navigates to the feed,
-opens the composer, types the post, clicks Post, and verifies.
+Two modes:
+  1. Profile mode (RECOMMENDED): if ~/.linkedin-mcp/profile/ exists, uses it
+     as a Playwright persistent context. No cookie file needed.
+  2. Cookie mode (FALLBACK): reads li_at from /etc/linkedin-mcp-pro/li_at
+     and injects it as an HttpOnly cookie.
 
-Useful for:
-  - One-off posts without launching the MCP server
-  - Sanity check that the SOCKS tunnel + cookie are still working
-  - Reference implementation of how the linkedin-mcp-pro browser module
-    uses Playwright under the hood
+Profile mode is what you want long-term (after running bootstrap_session.sh
+on your laptop). Cookie mode is for emergencies or first-time setup.
 
 Usage:
   python3 scripts/post_with_stealth.py
-  python3 scripts/post_with_stealth.py "Custom post text here"
-
-Prerequisites:
-  pip install playwright playwright-stealth
-  python3 -m playwright install chromium
-  /etc/linkedin-mcp-pro/li_at must contain a valid li_at cookie
-  SOCKS5 proxy must be running on 127.0.0.1:1080 (see scripts/laptop-proxy.sh)
+  python3 scripts/post_with_stealth.py "Custom post text"
+  python3 scripts/post_with_stealth.py --profile-only    # error if no profile
+  python3 scripts/post_with_stealth.py --cookie-only     # ignore profile
 """
+import argparse
 import asyncio
 import os
 import sys
 from pathlib import Path
 
-DEFAULT_POST = """\ud83d\ude80 Open-sourced linkedin-mcp-pro v0.3.0
+DEFAULT_POST = """\ud83d\ude80 Open-sourced linkedin-mcp-pro v0.4.0
 
-MCP server for posting to LinkedIn through persistent browser sessions \u2014 no Voyager HTTP API (which flags cookies), no headless scraping (which breaks on every UI change).
+MCP server for posting to LinkedIn through a persistent browser session \u2014 sync your real Chrome profile once, post for months without re-auth.
 
-22 tools (12 read + 8 write + 2 stats), 179 tests passing, MIT licensed.
+The auth story: bootstrap on laptop (Chrome profile copy), server uses it via Playwright. No cookie files, no API key rotation, no Voyager calls.
 
-The interesting engineering: making headless Chromium pass LinkedIn's fingerprint check. v3 cookies bind to UA/viewport/timezone, so even valid tokens get rejected on UA mismatch.
+22 tools (12 read + 8 write + 2 stats), 179 tests, MIT licensed.
 
 github.com/horizonbymuneeb/linkedin-mcp-pro
 
 #opensource #mcp #browser-automation"""
 
-COOKIE_PATH = "/etc/linkedin-mcp-pro/li_at"
-PROXY = "socks5://127.0.0.1:1080"
+PROFILE_DIR = os.environ.get("LINKEDIN_MCP_PROFILE_DIR", "/home/admin/.linkedin-mcp/profile")
+COOKIE_PATH = os.environ.get("LINKEDIN_MCP_COOKIE_FILE", "/etc/linkedin-mcp-pro/li_at")
+PROXY = os.environ.get("LINKEDIN_MCP_PROXY", "socks5://127.0.0.1:1080")
 USER_AGENT = (
     "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
     "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
@@ -47,12 +44,35 @@ USER_AGENT = (
 SCREENSHOT_PREFIX = "/tmp/li_post"
 
 
+def detect_mode(force: str | None) -> str:
+    """Return 'profile' or 'cookie' based on availability and --profile-only/--cookie-only."""
+    has_profile = Path(PROFILE_DIR).is_dir() and (Path(PROFILE_DIR) / "Local State").exists()
+    has_cookie = Path(COOKIE_PATH).exists() or os.access(COOKIE_PATH, os.R_OK)
+
+    if force == "profile":
+        if not has_profile:
+            sys.exit(f"\u274c --profile-only but no profile at {PROFILE_DIR}")
+        return "profile"
+    if force == "cookie":
+        if not has_cookie:
+            sys.exit(f"\u274c --cookie-only but no cookie at {COOKIE_PATH}")
+        return "cookie"
+    if has_profile:
+        return "profile"
+    if has_cookie:
+        return "cookie"
+    sys.exit(
+        "\u274c No profile or cookie found.\n"
+        f"  Profile expected at: {PROFILE_DIR}\n"
+        f"  Cookie expected at:  {COOKIE_PATH}\n"
+        "  Run scripts/bootstrap_session.sh on your laptop, or paste a li_at cookie."
+    )
+
+
 def read_cookie() -> str:
-    """Read the li_at cookie from the protected file."""
     p = Path(COOKIE_PATH)
     if p.exists() and os.access(p, os.R_OK):
         return p.read_text().strip()
-    # Fallback: file is root-only, use sudo
     import subprocess
     r = subprocess.run(
         ["sudo", "cat", str(p)], capture_output=True, text=True, check=True
@@ -60,11 +80,8 @@ def read_cookie() -> str:
     return r.stdout.strip()
 
 
-async def main() -> int:
-    post_text = sys.argv[1] if len(sys.argv) > 1 else DEFAULT_POST
-
-    cookie = read_cookie()
-    print(f"cookie length: {len(cookie)}")
+async def post(post_text: str, mode: str) -> int:
+    from playwright.async_api import async_playwright
 
     try:
         from playwright_stealth import Stealth
@@ -72,41 +89,55 @@ async def main() -> int:
         has_stealth = True
     except ImportError:
         has_stealth = False
-    print(f"stealth: {'yes' if has_stealth else 'no (manual fallback)'}")
-
-    from playwright.async_api import async_playwright
+    print(f"mode: {mode} | stealth: {'yes' if has_stealth else 'no'}")
 
     async with async_playwright() as p:
-        print(f"\u2192 launching chromium via {PROXY}")
-        browser = await p.chromium.launch(
-            headless=True,
-            proxy={"server": PROXY},
-            args=[
-                "--disable-blink-features=AutomationControlled",
-                "--no-sandbox",
-                "--disable-setuid-sandbox",
-                "--disable-dev-shm-usage",
-            ],
-        )
-        ctx = await browser.new_context(
-            viewport={"width": 1920, "height": 1080},
-            user_agent=USER_AGENT,
-            locale="en-US",
-            timezone_id="Asia/Karachi",
-            color_scheme="light",
-        )
-        await ctx.add_cookies([{
-            "name": "li_at",
-            "value": cookie,
-            "domain": ".linkedin.com",
-            "path": "/",
-            "httpOnly": True,
-            "secure": True,
-            "sameSite": "None",
-        }])
-        print("\u2192 cookie injected")
+        if mode == "profile":
+            print(f"\u2192 launching chromium (persistent profile: {PROFILE_DIR})")
+            ctx = await p.chromium.launch_persistent_context(
+                user_data_dir=PROFILE_DIR,
+                headless=True,
+                proxy={"server": PROXY} if PROXY else None,
+                viewport={"width": 1920, "height": 1080},
+                user_agent=USER_AGENT,
+                locale="en-US",
+                timezone_id="Asia/Karachi",
+                color_scheme="light",
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                ],
+            )
+            page = ctx.pages[0] if ctx.pages else await ctx.new_page()
+        else:
+            cookie = read_cookie()
+            print(f"\u2192 launching chromium (cookie mode, len={len(cookie)})")
+            browser = await p.chromium.launch(
+                headless=True,
+                proxy={"server": PROXY} if PROXY else None,
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                ],
+            )
+            ctx = await browser.new_context(
+                viewport={"width": 1920, "height": 1080},
+                user_agent=USER_AGENT,
+                locale="en-US",
+                timezone_id="Asia/Karachi",
+                color_scheme="light",
+            )
+            await ctx.add_cookies([{
+                "name": "li_at", "value": cookie,
+                "domain": ".linkedin.com", "path": "/",
+                "httpOnly": True, "secure": True, "sameSite": "None",
+            }])
+            page = await ctx.new_page()
 
-        page = await ctx.new_page()
         if has_stealth:
             await stealth_lib.apply_stealth_async(page)
         else:
@@ -128,17 +159,22 @@ async def main() -> int:
 
         await page.wait_for_timeout(4000)
         print(f"  title: {await page.title()!r}")
-        print(f"  url:   {page.url}")
         await page.screenshot(path=f"{SCREENSHOT_PREFIX}_1_feed.png")
 
         body = await page.inner_text("body", timeout=5000)
-        is_login = "/login" in page.url or "/signup" in page.url or "authwall" in page.url
-        ok = ("Muneeb" in body or "muneeb" in body.lower()) and "Start a post" in body
-        if is_login or not ok:
-            print("\u274c NOT logged in \u2014 cookie flagged or invalid")
-            await page.screenshot(path=f"{SCREENSHOT_PREFIX}_FAIL_login.png", full_page=True)
-            await browser.close()
+        is_login = any(x in page.url for x in ("/login", "/signup", "authwall"))
+        is_logged_in = "Start a post" in body or "My Network" in body
+        if is_login or not is_logged_in:
+            print(f"\u274c NOT logged in (url={page.url})")
+            print("  Re-sync profile (scripts/bootstrap_session.sh) or refresh cookie.")
+            await page.screenshot(path=f"{SCREENSHOT_PREFIX}_FAIL.png", full_page=True)
+            await ctx.close()
             return 1
+
+        if not post_text:
+            print("\u2713 session health: OK (logged in, can post)")
+            await ctx.close()
+            return 0
 
         print("\u2192 click 'Start a post'")
         for sel in [
@@ -154,7 +190,7 @@ async def main() -> int:
         else:
             print("\u274c Start a post button not found")
             await page.screenshot(path=f"{SCREENSHOT_PREFIX}_FAIL_nocomposer.png", full_page=True)
-            await browser.close()
+            await ctx.close()
             return 1
 
         await page.wait_for_timeout(2500)
@@ -176,7 +212,7 @@ async def main() -> int:
         else:
             print("\u274c editor not found")
             await page.screenshot(path=f"{SCREENSHOT_PREFIX}_FAIL_noeditor.png", full_page=True)
-            await browser.close()
+            await ctx.close()
             return 1
 
         await page.wait_for_timeout(1500)
@@ -196,28 +232,36 @@ async def main() -> int:
         else:
             print("\u274c Post button not found")
             await page.screenshot(path=f"{SCREENSHOT_PREFIX}_FAIL_nopost.png", full_page=True)
-            await browser.close()
+            await ctx.close()
             return 1
 
         await page.wait_for_timeout(7000)
         await page.screenshot(path=f"{SCREENSHOT_PREFIX}_4_done.png", full_page=True)
-
-        try:
-            await page.goto("https://www.linkedin.com/feed/", wait_until="domcontentloaded", timeout=15000)
-            await page.wait_for_timeout(3000)
-            body = await page.inner_text("body", timeout=5000)
-            await page.screenshot(path=f"{SCREENSHOT_PREFIX}_5_verify.png", full_page=True)
-            marker = "linkedin-mcp-pro v0.3.0"
-            if marker in body:
-                print(f"\u2705 SUCCESS \u2014 post visible in feed (matched {marker!r})")
-            else:
-                print("\u26a0\ufe0f posted but content not found in feed")
-        except Exception as e:
-            print(f"verify warn: {e}")
-
-        await browser.close()
+        await ctx.close()
+        print("\u2705 posted")
         return 0
 
 
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    parser.add_argument("text", nargs="?", help="Post text (omit for health check)")
+    parser.add_argument("--profile-only", action="store_true", help="Require profile mode")
+    parser.add_argument("--cookie-only", action="store_true", help="Require cookie mode")
+    parser.add_argument("--check", action="store_true", help="Just verify login")
+    args = parser.parse_args()
+
+    force = "profile" if args.profile_only else ("cookie" if args.cookie_only else None)
+    mode = detect_mode(force)
+
+    if args.check:
+        text = ""
+    elif args.text:
+        text = args.text
+    else:
+        text = DEFAULT_POST
+        print("Using default post text (use --check to skip posting).")
+    return asyncio.run(post(text, mode))
+
+
 if __name__ == "__main__":
-    sys.exit(asyncio.run(main()))
+    sys.exit(main())

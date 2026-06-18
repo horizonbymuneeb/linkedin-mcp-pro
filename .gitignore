@@ -64,3 +64,4 @@ test-results/
 playwright-report/
 .env.bak
 *.bak
+scripts/__pycache__/

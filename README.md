@@ -171,30 +171,60 @@ JSESSIONID_FILE=/etc/linkedin-mcp-pro/jsessionid
 
 ---
 
-## Quick start (v0.3+)
+## Quick start
 
-linkedin-mcp-pro v0.3 authenticates with a **persistent browser session** — no cookie extraction required.
+linkedin-mcp-pro v0.4 supports **3 authentication modes** — pick the one that fits your setup:
+
+| Mode | Setup effort | Cookie lifetime | Best for |
+|---|---|---|---|
+| **A. Profile sync** ⭐ | 5 min, one-time | 6-12 months | Most users (laptop + server) |
+| **B. Browser login** | 2 min | 6-12 months | Local machines (have a display) |
+| **C. `LI_AT` cookie** | 1 min, recurring | 1-7 days | Headless / CI / emergency fallback |
+
+### Option A — Profile sync (recommended for remote servers)
 
 ```bash
-# 1. Install
+# On your LAPTOP (one time)
+git clone https://github.com/horizonbymuneeb/linkedin-mcp-pro
+cd linkedin-mcp-pro
+./scripts/bootstrap_session.sh
+# → detects Chrome, packages profile, syncs to your server
+
+# On your SERVER (from now on, automatic)
 pip install -e .
-# (or use Docker / systemd — see Installation above)
-
-# 2. Log in once (browser opens, log in normally, profile is saved)
-linkedin-mcp login
-
-# 3. Verify
-linkedin-mcp-health
-
-# 4. Start the MCP server
 linkedin-mcp-pro
+# No more cookie management. The profile auto-refreshes.
 ```
 
-That's it. All future MCP calls use the saved session at `~/.linkedin-mcp/profile/`. Cookies refresh automatically (the browser handles it — `li_at` typically lasts months, not 7 days).
+### Option B — `linkedin-mcp login` (local machines)
 
-**Captcha / 2FA?** If LinkedIn shows a security check, the browser window stays open. Solve it manually, then tell your MCP client to retry. See [USAGE.md → Handling security checks](USAGE.md#handling-security-checks-captcha--2fa).
+```bash
+pip install -e .
+linkedin-mcp login    # opens Chrome, you log in, profile saved
+linkedin-mcp-pro      # start the server
+```
 
-**Headless / CI?** Set the `LI_AT` env var as before (extracted from DevTools). It's used as a fallback when no profile exists. See [USAGE.md → Setup and authentication](USAGE.md#setup-and-authentication) for the full flow.
+### Option C — `LI_AT` cookie (headless / emergency)
+
+```bash
+# Extract from DevTools: Application → Cookies → li_at
+echo "LI_AT=AQED..." > /etc/linkedin-mcp-pro/li_at
+chmod 600 /etc/linkedin-mcp-pro/li_at
+linkedin-mcp-pro
+# Cookie expires in ~7 days, repeat
+```
+
+### If your server is on a datacenter IP (AWS, GCP, etc.)
+
+LinkedIn blocks datacenter IPs. You need a proxy. See **[docs/PROXY_SETUP.md](docs/PROXY_SETUP.md)** for 5 options:
+
+- SOCKS via SSH to your laptop (simplest)
+- SOCKS via cloudflared tunnel (most reliable)
+- Termux phone proxy (mobile, always with you)
+- Residential proxy service (paid)
+- WireGuard VPN to a home server (most professional)
+
+The included `scripts/post_with_stealth.py` and `scripts/use_profile_session.py` automatically use `LINKEDIN_MCP_PROXY` env var.
 
 ---
 
@@ -347,9 +377,18 @@ linkedin-mcp-pro/
 ├── docs/
 │   ├── ARCHITECTURE.md
 │   ├── SAFETY.md
-│   └── CONTRIBUTING.md
+│   ├── CONTRIBUTING.md
+│   ├── PROXY_SETUP.md     # 5 proxy options for connecting from datacenter IPs
+│   └── TERMUX_SETUP.md    # Android phone as proxy host
 ├── examples/
 │   └── mcp_client_config.json   # template for any MCP client
+├── scripts/                        # one-shot helpers, not part of the installed package
+│   ├── bootstrap_session.sh       # one-time: copy laptop Chrome profile to server
+│   ├── sync_profile.sh            # re-sync profile (same as bootstrap)
+│   ├── use_profile_session.py     # post using persistent profile (no cookie file)
+│   ├── post_with_stealth.py       # post with auto-detect (profile or cookie)
+│   ├── termux_setup.sh            # Android Termux phone setup
+│   └── termux_proxy.sh            # (helper installed by termux_setup.sh)
 ├── systemd/
 │   └── linkedin-mcp-pro.service
 ├── pyproject.toml

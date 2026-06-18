@@ -5,6 +5,29 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] — 2026-06-18
+
+### Added
+- **Profile sync workflow (Option A)** — copy your real laptop's Chrome profile to the server once; the server uses it as a Playwright persistent context. Cookie lifetime goes from days to 6-12 months. No more pasting fresh `li_at` cookies.
+- **`scripts/bootstrap_session.sh`** — laptop-side: detects OS + Chrome profile, packages relevant files, transfers to server via direct scp, rsync over the cloudflared tunnel, or manual instructions.
+- **`scripts/use_profile_session.py`** — EC2-side: posts to LinkedIn using the synced profile (no cookie file required). Reads `LINKEDIN_MCP_PROFILE_DIR` and `LINKEDIN_MCP_PROXY` env vars.
+- **`scripts/sync_profile.sh`** — thin alias for `bootstrap_session.sh` (re-run to refresh after LinkedIn forces re-auth).
+- **`scripts/termux_setup.sh`** — turn an Android phone into a SOCKS proxy host. Installs openssh (port 8022), cloudflared, sets up key-only auth, creates a `linkedin-proxy` helper command.
+- **`scripts/post_with_stealth.py` (rewritten)** — auto-detects mode (profile vs cookie), supports `--profile-only` and `--cookie-only` flags, honors `LINKEDIN_MCP_PROXY` env var.
+- **`docs/PROXY_SETUP.md`** — comprehensive guide for 5 proxy options (SOCKS via SSH, SOCKS via cloudflared, Termux phone, residential proxy services, WireGuard VPN), with diagrams, pros/cons, and step-by-step setup.
+- **`docs/TERMUX_SETUP.md`** — full Termux phone guide including battery-saving tips, named-tunnel setup for stable URLs, and Android-specific troubleshooting.
+
+### Changed
+- `post_with_stealth.py` now uses Playwright's `launch_persistent_context` when a profile is available (matches the linkedin-mcp-pro `linkedin-mcp login` flow).
+- All scripts honor `LINKEDIN_MCP_PROXY` (default: `socks5://127.0.0.1:1080`) so the same scripts work whether the proxy is SSH-tunneled, cloudflared, Termux, or a residential service.
+
+### Migration from v0.3.0
+
+Nothing required. The new scripts are additive:
+- **Already using `linkedin-mcp login`?** Keep using it — the same `~/.linkedin-mcp/profile/` is now also usable by the standalone scripts.
+- **Currently pasting cookies?** Switch to Option A: run `scripts/bootstrap_session.sh` on your laptop once.
+- **No proxy yet?** Read `docs/PROXY_SETUP.md` and pick one.
+
 ## [0.3.0] — 2026-06-18
 
 ### Added
