@@ -42,6 +42,10 @@ github.com/horizonbymuneeb/linkedin-mcp-pro
 
 PROFILE_DIR = os.environ.get("LINKEDIN_MCP_PROFILE_DIR", "/home/admin/.linkedin-mcp/profile")
 PROXY = os.environ.get("LINKEDIN_MCP_PROXY", "socks5://127.0.0.1:1080")
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
+)
 SCREENSHOT_PREFIX = "/tmp/li_profile_post"
 
 
@@ -50,15 +54,23 @@ def check_profile() -> bool:
     p = Path(PROFILE_DIR)
     if not p.is_dir():
         print(f"\u274c Profile dir missing: {PROFILE_DIR}")
-        print("  Run scripts/bootstrap_session.sh on your laptop first.")
+        print("  Run scripts/cookie_to_profile.py or scripts/bootstrap_session.sh first.")
         return False
-    required = ["Local State", "Cookies"]
-    missing = [f for f in required if not (p / f).exists()]
-    if missing:
-        print(f"\u274c Profile incomplete. Missing: {', '.join(missing)}")
-        return False
-    print(f"\u2713 Profile OK: {PROFILE_DIR}")
-    return True
+    # Two layout options, both supported:
+    # 1. state.json (from cookie_to_profile.py, more reliable for HttpOnly cookies)
+    # 2. Default/Cookies DB (from bootstrap_session.sh / linkedin-mcp login)
+    state_json = p / "state.json"
+    if state_json.is_file():
+        size = state_json.stat().st_size
+        print(f"\u2713 Profile OK (storage_state): {state_json} ({size:,} bytes)")
+        return True
+    cookies_db = p / "Default" / "Cookies"
+    if cookies_db.exists():
+        size = cookies_db.stat().st_size
+        print(f"\u2713 Profile OK (persistent): {cookies_db} ({size:,} bytes)")
+        return True
+    print(f"\u274c Profile incomplete: no state.json or Default/Cookies in {PROFILE_DIR}")
+    return False
 
 
 async def post_via_profile(post_text: str) -> int:
@@ -66,28 +78,21 @@ async def post_via_profile(post_text: str) -> int:
 
     try:
         from playwright_stealth import Stealth
-        stealth = Stealth()
+        stealth_lib = Stealth()
         has_stealth = True
     except ImportError:
         has_stealth = False
     print(f"stealth: {'yes' if has_stealth else 'no (manual fallback)'}")
 
+    state_json = Path(PROFILE_DIR) / "state.json"
+    use_storage_state = state_json.is_file()
+    print(f"profile mode: {'storage_state' if use_storage_state else 'persistent context'}")
+
     async with async_playwright() as p:
-        print(f"\u2192 launching chromium (profile: {PROFILE_DIR})")
-        # Use a persistent context — Playwright's way of reusing a real Chrome
-        # user-data-dir, so all cookies/storage are picked up automatically
-        ctx = await p.chromium.launch_persistent_context(
-            user_data_dir=PROFILE_DIR,
+        print(f"\u2192 launching chromium")
+        browser = await p.chromium.launch(
             headless=True,
             proxy={"server": PROXY} if PROXY else None,
-            viewport={"width": 1920, "height": 1080},
-            user_agent=(
-                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                "(KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
-            ),
-            locale="en-US",
-            timezone_id="Asia/Karachi",
-            color_scheme="light",
             args=[
                 "--disable-blink-features=AutomationControlled",
                 "--no-sandbox",
@@ -95,10 +100,38 @@ async def post_via_profile(post_text: str) -> int:
                 "--disable-dev-shm-usage",
             ],
         )
+        if use_storage_state:
+            # state.json approach (more reliable for HttpOnly cookies)
+            ctx = await browser.new_context(
+                storage_state=str(state_json),
+                viewport={"width": 1920, "height": 1080},
+                user_agent=USER_AGENT,
+                locale="en-US",
+                timezone_id="Asia/Karachi",
+                color_scheme="light",
+            )
+        else:
+            # persistent context approach (from bootstrap_session.sh / linkedin-mcp login)
+            ctx = await browser.launch_persistent_context(
+                user_data_dir=PROFILE_DIR,
+                headless=True,
+                proxy={"server": PROXY} if PROXY else None,
+                viewport={"width": 1920, "height": 1080},
+                user_agent=USER_AGENT,
+                locale="en-US",
+                timezone_id="Asia/Karachi",
+                color_scheme="light",
+                args=[
+                    "--disable-blink-features=AutomationControlled",
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                ],
+            )
         page = ctx.pages[0] if ctx.pages else await ctx.new_page()
 
         if has_stealth:
-            await stealth.apply_stealth_async(page)
+            await stealth_lib.apply_stealth_async(page)
         else:
             await page.add_init_script("""
                 Object.defineProperty(navigator, 'webdriver', {get: () => undefined});
@@ -212,8 +245,11 @@ def main() -> int:
     if not check_profile():
         return 1
 
-    text = "" if (args.check or not args.text) else args.text
-    if not text:
+    if args.check:
+        text = ""
+    elif args.text:
+        text = args.text
+    else:
         text = DEFAULT_POST
         print("Using default post text (run with --check to skip posting).")
     return asyncio.run(post_via_profile(text))

@@ -5,6 +5,22 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] — 2026-06-18
+
+### Added
+- **`scripts/cookie_to_profile.py`** — bootstrap a persistent browser session from a single li_at cookie. The QUICK path: paste cookie → 30 seconds later you have a profile that auto-refreshes forever.
+  - Uses Playwright's `storage_state.json` API (more reliable than `launch_persistent_context` for HttpOnly cookies)
+  - Captures 30+ LinkedIn cookies (li_at, JSESSIONID, bcookie, lidc, li_sugr, ...) in one go
+  - Verifies login before saving (detects already-flagged cookies)
+  - Supports `--cookie` inline, `--cookie-file` for non-standard path, `--profile-dir` for testing, `--force` to overwrite
+
+### Fixed
+- `use_profile_session.py` and `post_with_stealth.py` now correctly detect a profile in two layouts:
+  - `state.json` (from `cookie_to_profile.py` — recommended)
+  - `Default/Cookies` SQLite DB (from `bootstrap_session.sh` / `linkedin-mcp login`)
+- `--check` flag in `use_profile_session.py` no longer accidentally posts
+- Permission errors on root-only `/etc/linkedin-mcp-pro/li_at` no longer crash detection (uses `is_file()` with try/except)
+
 ## [0.4.0] — 2026-06-18
 
 ### Added

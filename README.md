@@ -173,13 +173,14 @@ JSESSIONID_FILE=/etc/linkedin-mcp-pro/jsessionid
 
 ## Quick start
 
-linkedin-mcp-pro v0.4 supports **3 authentication modes** — pick the one that fits your setup:
+linkedin-mcp-pro v0.4 supports **4 authentication modes** — pick the one that fits your setup:
 
 | Mode | Setup effort | Cookie lifetime | Best for |
 |---|---|---|---|
 | **A. Profile sync** ⭐ | 5 min, one-time | 6-12 months | Most users (laptop + server) |
 | **B. Browser login** | 2 min | 6-12 months | Local machines (have a display) |
-| **C. `LI_AT` cookie** | 1 min, recurring | 1-7 days | Headless / CI / emergency fallback |
+| **C. Cookie → Profile** ⭐ | 30 sec, one-time | 6-12 months | Quick path: cookie paste → auto-build |
+| **D. `LI_AT` cookie** | 1 min, recurring | 1-7 days | Headless / CI / emergency fallback |
 
 ### Option A — Profile sync (recommended for remote servers)
 
@@ -204,7 +205,28 @@ linkedin-mcp login    # opens Chrome, you log in, profile saved
 linkedin-mcp-pro      # start the server
 ```
 
-### Option C — `LI_AT` cookie (headless / emergency)
+### Option C — Cookie → Profile conversion (fastest bootstrap)
+
+Already have a working `li_at` cookie? Build a self-updating profile from it in 30 seconds:
+
+```bash
+# 1. Save the cookie
+echo "LI_AT=AQED..." | sudo tee /etc/linkedin-mcp-pro/li_at > /dev/null
+sudo chmod 640 /etc/linkedin-mcp-pro/li_at
+
+# 2. One-time: build the profile
+python3 scripts/cookie_to_profile.py
+# → opens Playwright, injects cookie, populates ~30 cookies + localStorage,
+#   exports to ~/.linkedin-mcp/profile/state.json
+
+# 3. From now on, just use the profile (no more cookie paste)
+python3 scripts/post_with_stealth.py
+# → reads state.json, posts automatically, cookies refresh themselves
+```
+
+This is the path of least resistance for users who already have a working cookie but are tired of pasting it every few days.
+
+### Option D — `LI_AT` cookie (headless / emergency)
 
 ```bash
 # Extract from DevTools: Application → Cookies → li_at
@@ -385,6 +407,7 @@ linkedin-mcp-pro/
 ├── scripts/                        # one-shot helpers, not part of the installed package
 │   ├── bootstrap_session.sh       # one-time: copy laptop Chrome profile to server
 │   ├── sync_profile.sh            # re-sync profile (same as bootstrap)
+│   ├── cookie_to_profile.py       # build a profile from a single li_at cookie (fastest)
 │   ├── use_profile_session.py     # post using persistent profile (no cookie file)
 │   ├── post_with_stealth.py       # post with auto-detect (profile or cookie)
 │   ├── termux_setup.sh            # Android Termux phone setup
