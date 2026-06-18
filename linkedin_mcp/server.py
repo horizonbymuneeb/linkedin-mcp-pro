@@ -515,6 +515,73 @@ TOOLS: list[dict[str, Any]] = [
         ),
         "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
     },
+    # =================== SCHEDULER (v0.5.0) ===================
+    {
+        "name": "list_schedules",
+        "description": "List all post schedules from ~/.linkedin-mcp/schedule.yaml.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "add_schedule",
+        "description": (
+            "Add a new post schedule. Provide one of: cron (5-field), at (ISO datetime), "
+            "or days+time. Provide either template (name) or text (direct body)."
+        ),
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "name": {"type": "string"},
+                "cron": {"type": "string"},
+                "at": {"type": "string"},
+                "days": {"type": "array", "items": {"type": "string"}},
+                "time": {"type": "string"},
+                "template": {"type": "string"},
+                "text": {"type": "string"},
+                "vars": {"type": "object"},
+                "tags": {"type": "array", "items": {"type": "string"}},
+            },
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "remove_schedule",
+        "description": "Remove a post schedule by name.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "enable_schedule",
+        "description": "Re-enable a disabled post schedule.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "disable_schedule",
+        "description": "Disable a post schedule (keeps it in the YAML, won't run).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"name": {"type": "string"}},
+            "required": ["name"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "run_due_now",
+        "description": (
+            "Enqueue all currently-due schedules into the action queue. "
+            "The scheduler worker drains them through SafetyGuard + create_post."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
     # =================== STATS ===================
     {
         "name": "get_daily_stats",
@@ -783,6 +850,34 @@ async def _dispatch_templates(name: str, args: dict) -> Any:
     raise ValueError(f"Unknown template tool: {name}")
 
 
+async def _dispatch_scheduler(name: str, args: dict) -> Any:
+    """Dispatcher for the post-scheduler tools (v0.5.0)."""
+    from .tools import scheduler as _sch_tools
+    if name == "list_schedules":
+        return _sch_tools.list_schedules()
+    if name == "add_schedule":
+        return _sch_tools.add_schedule(
+            name=args["name"],
+            cron=args.get("cron"),
+            at=args.get("at"),
+            days=args.get("days"),
+            time=args.get("time"),
+            template=args.get("template"),
+            text=args.get("text"),
+            vars=args.get("vars"),
+            tags=args.get("tags"),
+        )
+    if name == "remove_schedule":
+        return _sch_tools.remove_schedule(args["name"])
+    if name == "enable_schedule":
+        return _sch_tools.enable_schedule(args["name"])
+    if name == "disable_schedule":
+        return _sch_tools.disable_schedule(args["name"])
+    if name == "run_due_now":
+        return _sch_tools.run_due_now()
+    raise ValueError(f"Unknown scheduler tool: {name}")
+
+
 # ----------------------------------------------------------------------------
 # MCP server wiring
 # ----------------------------------------------------------------------------
@@ -837,6 +932,16 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             "deadman_test_alert",
         ):
             data = await _dispatch_deadman(name, arguments)
+        # Scheduler (v0.5.0) — YAML + DB, no safety guard (worker enforces).
+        elif name in (
+            "list_schedules",
+            "add_schedule",
+            "remove_schedule",
+            "enable_schedule",
+            "disable_schedule",
+            "run_due_now",
+        ):
+            data = await _dispatch_scheduler(name, arguments)
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 

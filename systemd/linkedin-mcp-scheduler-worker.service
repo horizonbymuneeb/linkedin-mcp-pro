@@ -1,0 +1,14 @@
+[Unit]
+Description=linkedin-mcp-pro scheduler worker — drain action_queue
+After=network.target linkedin-mcp-scheduler.service
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/python3 -m linkedin_mcp.scheduler_worker --max 5
+WorkingDirectory=/home/admin
+StandardOutput=journal
+StandardError=journal
+EnvironmentFile=-/etc/linkedin-mcp-pro/linkedin-mcp-pro.env
+
+[Install]
+WantedBy=multi-user.target
