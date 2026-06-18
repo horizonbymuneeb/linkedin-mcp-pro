@@ -1,0 +1,21 @@
+[Unit]
+Description=linkedin-mcp-pro — dead-man switch check (Telegram alert if silent for N days)
+Documentation=https://github.com/horizonbymuneeb/linkedin-mcp-pro
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/linkedin-mcp-pro
+EnvironmentFile=/etc/linkedin-mcp-pro/linkedin-mcp-pro.env
+# Use the system python3 (not the venv) so the timer is robust to venv
+# recreation. The dead-man module only needs stdlib + linkedin_mcp's deps.
+ExecStart=/usr/bin/python3 -m linkedin_mcp.cli_deadman check
+# Telegram credentials are read from the env file above; the dead-man
+# module falls back gracefully if they're missing (logs + audit, no crash).
+StandardOutput=journal
+StandardError=journal
+# Don't let a slow Telegram call hang the timer indefinitely.
+TimeoutStartSec=30

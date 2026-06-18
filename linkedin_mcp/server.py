@@ -489,6 +489,32 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    # =================== DEAD-MAN SWITCH (v0.5.0) ===================
+    {
+        "name": "deadman_status",
+        "description": (
+            "Read-only dead-man switch check: last_post_at, days_since, status, "
+            "should_alert. No side effects, no Telegram call."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "deadman_check_and_alert",
+        "description": (
+            "Force a dead-man check and send a Telegram alert if status=='alert' "
+            "and the 24h cooldown has elapsed. Telegram is configured via "
+            "LINKEDIN_MCP_TELEGRAM_BOT_TOKEN + LINKEDIN_MCP_TELEGRAM_CHAT_ID."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "deadman_test_alert",
+        "description": (
+            "Send a one-off test Telegram message (bypasses the 24h cooldown) "
+            "so the operator can verify bot token + chat id are wired up."
+        ),
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
     # =================== STATS ===================
     {
         "name": "get_daily_stats",
@@ -681,6 +707,22 @@ async def _dispatch_write(name: str, args: dict) -> dict:
     return result
 
 
+async def _dispatch_deadman(name: str, args: dict) -> Any:
+    """Dispatcher for the dead-man-switch tools (v0.5.0).
+
+    All three are read- or notification-only — no SafetyGuard needed.
+    """
+    from .tools import deadman as _dm_tools
+
+    if name == "deadman_status":
+        return _dm_tools.deadman_status()
+    if name == "deadman_check_and_alert":
+        return _dm_tools.deadman_check_and_alert()
+    if name == "deadman_test_alert":
+        return _dm_tools.deadman_test_alert()
+    raise ValueError(f"Unknown deadman tool: {name}")
+
+
 async def _dispatch_stats(name: str, args: dict) -> Any:
     cfg, db, _ = state()
     if name == "get_daily_stats":
@@ -788,6 +830,13 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             "delete_template",
         ):
             data = await _dispatch_templates(name, arguments)
+        # Dead-man switch (v0.5.0) — DB + Telegram, no safety guard.
+        elif name in (
+            "deadman_status",
+            "deadman_check_and_alert",
+            "deadman_test_alert",
+        ):
+            data = await _dispatch_deadman(name, arguments)
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
