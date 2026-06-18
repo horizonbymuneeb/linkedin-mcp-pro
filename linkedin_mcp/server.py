@@ -272,7 +272,7 @@ TOOLS: list[dict[str, Any]] = [
     {
         "name": "create_post",
         "description": (
-            "Publish a new LinkedIn post (text, optional media URL). "
+            "Publish a new LinkedIn post (text + optional local image/video file). "
             "Subject to daily quota (default 2), warm-up, business hours, jitter. "
             "Set dry_run=true to preview."
         ),
@@ -280,7 +280,10 @@ TOOLS: list[dict[str, Any]] = [
             "type": "object",
             "properties": {
                 "text": {"type": "string", "minLength": 1, "maxLength": 3000},
-                "media_url": {"type": "string", "description": "Optional image/video URL"},
+                "media_path": {
+                    "type": "string",
+                    "description": "Optional local file path to image (.jpg/.png/.gif) or video (.mp4/.mov). Max 200MB.",
+                },
                 "visibility": {"type": "string", "enum": ["PUBLIC", "CONNECTIONS"], "default": "PUBLIC"},
                 "dry_run": {"type": "boolean", "default": False},
             },
@@ -290,28 +293,34 @@ TOOLS: list[dict[str, Any]] = [
     },
     {
         "name": "delete_post",
-        "description": "Permanently delete one of your own posts by its URN/ID.",
+        "description": "Permanently delete one of your own posts by URL or URN.",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "post_urn": {"type": "string", "description": "LinkedIn post URN, e.g. 'urn:li:activity:1234'"},
+                "target": {
+                    "type": "string",
+                    "description": "LinkedIn post URL (https://www.linkedin.com/feed/update/urn:...) OR a URN like 'urn:li:activity:1234'",
+                },
                 "dry_run": {"type": "boolean", "default": False},
             },
-            "required": ["post_urn"],
+            "required": ["target"],
             "additionalProperties": False,
         },
     },
     {
         "name": "comment_on_post",
-        "description": "Post a comment on a LinkedIn post (by post URN or URL).",
+        "description": "Post a comment on a LinkedIn post (by URL or URN).",
         "inputSchema": {
             "type": "object",
             "properties": {
-                "post_urn": {"type": "string"},
+                "target": {
+                    "type": "string",
+                    "description": "LinkedIn post URL OR URN (urn:li:activity:...)",
+                },
                 "text": {"type": "string", "minLength": 1, "maxLength": 1250},
                 "dry_run": {"type": "boolean", "default": False},
             },
-            "required": ["post_urn", "text"],
+            "required": ["target", "text"],
             "additionalProperties": False,
         },
     },
@@ -321,15 +330,18 @@ TOOLS: list[dict[str, Any]] = [
         "inputSchema": {
             "type": "object",
             "properties": {
-                "post_urn": {"type": "string"},
+                "target": {
+                    "type": "string",
+                    "description": "LinkedIn post URL OR URN",
+                },
                 "reaction_type": {
                     "type": "string",
-                    "enum": ["LIKE", "CELEBRATE", "INSIGHTFUL", "LOVE", "SUPPORT", "FUNNY"],
+                    "enum": ["LIKE", "CELEBRATE", "INSIGHTFUL", "LOVE", "SUPPORT", "FUNNY", "CURIOUS", "MIND"],
                     "default": "LIKE",
                 },
                 "dry_run": {"type": "boolean", "default": False},
             },
-            "required": ["post_urn"],
+            "required": ["target"],
             "additionalProperties": False,
         },
     },
@@ -501,7 +513,7 @@ async def _dispatch_write(name: str, args: dict) -> dict:
         plan = ActionPlan(
             action="post",
             target="self",
-            payload={"text": args["text"][:100], "media_url": args.get("media_url")},
+            payload={"text": args["text"][:100], "media_path": args.get("media_path")},
             dry_run=dry_run,
         )
         guard.enforce(plan)
@@ -509,30 +521,30 @@ async def _dispatch_write(name: str, args: dict) -> dict:
             raise DryRun(plan)
         result = await br.create_post(
             text=args["text"],
-            media_url=args.get("media_url"),
+            media_path=args.get("media_path"),
             visibility=args.get("visibility", "PUBLIC"),
         )
     elif name == "delete_post":
-        plan = ActionPlan(action="post", target=args["post_urn"], payload={}, dry_run=dry_run)
+        plan = ActionPlan(action="post", target=args["target"], payload={"op": "delete"}, dry_run=dry_run)
         guard.enforce(plan)
         if dry_run:
             raise DryRun(plan)
-        result = await br.delete_post(post_urn=args["post_urn"])
+        result = await br.delete_post(target=args["target"])
     elif name == "comment_on_post":
         plan = ActionPlan(
             action="comment",
-            target=args["post_urn"],
+            target=args["target"],
             payload={"text": args["text"][:100]},
             dry_run=dry_run,
         )
         guard.enforce(plan)
         if dry_run:
             raise DryRun(plan)
-        result = await br.comment_on_post(post_urn=args["post_urn"], text=args["text"])
+        result = await br.comment_on_post(target=args["target"], text=args["text"])
     elif name == "react_to_post":
         plan = ActionPlan(
             action="reaction",
-            target=args["post_urn"],
+            target=args["target"],
             payload={"type": args.get("reaction_type", "LIKE")},
             dry_run=dry_run,
         )
@@ -540,7 +552,7 @@ async def _dispatch_write(name: str, args: dict) -> dict:
         if dry_run:
             raise DryRun(plan)
         result = await br.react_to_post(
-            post_urn=args["post_urn"], reaction_type=args.get("reaction_type", "LIKE")
+            target=args["target"], reaction_type=args.get("reaction_type", "LIKE")
         )
     elif name == "send_message":
         plan = ActionPlan(
