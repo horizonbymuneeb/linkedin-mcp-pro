@@ -59,7 +59,7 @@ def check_profile() -> bool:
     # Two layout options, both supported:
     # 1. state.json (from cookie_to_profile.py, more reliable for HttpOnly cookies)
     # 2. Default/Cookies DB (from bootstrap_session.sh / linkedin-mcp login)
-    state_json = p / "state.json"
+    state_json = p / "storage_state.json"
     if state_json.is_file():
         size = state_json.stat().st_size
         print(f"\u2713 Profile OK (storage_state): {state_json} ({size:,} bytes)")
@@ -84,7 +84,7 @@ async def post_via_profile(post_text: str) -> int:
         has_stealth = False
     print(f"stealth: {'yes' if has_stealth else 'no (manual fallback)'}")
 
-    state_json = Path(PROFILE_DIR) / "state.json"
+    state_json = Path(PROFILE_DIR) / "storage_state.json"
     use_storage_state = state_json.is_file()
     print(f"profile mode: {'storage_state' if use_storage_state else 'persistent context'}")
 

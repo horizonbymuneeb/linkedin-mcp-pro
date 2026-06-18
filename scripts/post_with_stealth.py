@@ -51,7 +51,7 @@ def detect_mode(force: str | None) -> str:
     #   - Default/Cookies DB exists (from bootstrap_session.sh / linkedin-mcp login)
     p = Path(PROFILE_DIR)
     has_profile = p.is_dir() and (
-        (p / "state.json").exists() or (p / "Default" / "Cookies").exists()
+        (p / "storage_state.json").exists() or (p / "Default" / "Cookies").exists()
     )
     # Path.exists() can raise PermissionError on root-only files/dirs; treat as 'no cookie'
     try:
@@ -103,7 +103,7 @@ async def post(post_text: str, mode: str) -> int:
 
     async with async_playwright() as p:
         if mode == "profile":
-            state_json = Path(PROFILE_DIR) / "state.json"
+            state_json = Path(PROFILE_DIR) / "storage_state.json"
             use_storage_state = state_json.is_file()
             profile_kind = "storage_state" if use_storage_state else "persistent context"
             print(f"\u2192 launching chromium (profile mode: {profile_kind})")

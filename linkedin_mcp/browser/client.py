@@ -194,13 +194,20 @@ class BrowserClient:
         log.debug("$ %s", " ".join(cmd))
         # agent-browser uses the cwd as its profile directory, so we MUST
         # launch it from inside self.profile_dir for cookie persistence.
+        # Proxy defaults to the v0.4+ documented SOCKS endpoint, but can be
+        # overridden via LINKEDIN_MCP_PROXY (same env var the standalone
+        # scripts read) or AGENT_BROWSER_PROXY (agent-browser's own).
+        proxy = (
+            os.environ.get("LINKEDIN_MCP_PROXY")
+            or os.environ.get("AGENT_BROWSER_PROXY")
+            or "socks5://127.0.0.1:1080"
+        )
         proc = await asyncio.create_subprocess_exec(
             *cmd,
             cwd=str(self.profile_dir),
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.PIPE,
-            env={**os.environ, "ALL_PROXY": "socks5://127.0.0.1:1080",
-                 "AGENT_BROWSER_PROXY": "socks5://127.0.0.1:1080"},
+            env={**os.environ, "ALL_PROXY": proxy, "AGENT_BROWSER_PROXY": proxy},
         )
         try:
             stdout, stderr = await asyncio.wait_for(proc.communicate(), timeout=timeout)
