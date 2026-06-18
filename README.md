@@ -20,7 +20,7 @@
 
 ## What is it?
 
-linkedin-mcp-pro is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes your LinkedIn account as 23 tools for any MCP-compatible client — while keeping you in control of *how* those tools act on your behalf.
+linkedin-mcp-pro is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes your LinkedIn account as 22 tools for any MCP-compatible client — while keeping you in control of *how* those tools act on your behalf.
 
 **22 tools, organized in 3 groups:**
 

@@ -5,6 +5,30 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.2.0] — 2026-06-18
+
+### Added
+- **Comment on posts** with full URL or URN support (previously stubbed)
+- **React to posts** with 8 reaction types: LIKE, CELEBRATE, INSIGHTFUL, LOVE, SUPPORT, FUNNY, CURIOUS, MIND
+- **Media upload in posts** — image (.jpg/.png/.gif) and video (.mp4/.mov) up to 200MB
+- **Delete post** — actual implementation (navigate, overflow menu, confirm)
+- **Note template rotation** — `connect.pick_note()` for varied connection request notes (anti-fingerprint)
+- **`BrowserClient.upload()`** — new method for file uploads
+- **`_validate_urn_or_url()`** helper — accepts both URLs and URNs across engage/post/connect modules
+- **42 new tests** in `test_v0_2_features.py` (127/127 total now passing)
+- **USAGE.md** — comprehensive user-facing guide with workflow examples
+
+### Changed
+- `comment_on_post` and `react_to_post` now accept either `post_url` or `post_urn` (renamed param: `target`)
+- `delete_post` now accepts URL or URN (renamed param: `target`)
+- `create_post` uses `media_path` (local file) instead of `media_url` (was a placeholder)
+- Switched from Patchright to **agent-browser** (Vercel Labs, 36k★) — 1065 fewer lines of code
+- Removed AI/Claude mentions from user-facing strings and code comments
+
+### Fixed
+- Browser module reduced from 1,397 → 813 lines (subprocess wrapper, simpler)
+- Real Chrome (Chrome for Testing) instead of Chromium for better stealth
+
 ## [0.1.0] — 2026-06-18
 
 ### Added
