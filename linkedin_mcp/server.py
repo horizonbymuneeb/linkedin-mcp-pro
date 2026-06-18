@@ -47,6 +47,7 @@ from .safety import (
     SafetyGuard,
     detect_captcha_in_text,
 )
+from .browser import BrowserChallenge  # re-raised in call_tool for clear UX
 
 # Read API (Voyager) — imported lazily because Agent 1 may still be building it.
 _api_module = None
@@ -679,6 +680,15 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
         return [TextContent(
             type="text",
             text=f"🤖 CAPTCHA detected: {e.reason}\n  Action: all writes paused 24h. Solve in browser.",
+        )]
+    except BrowserChallenge as e:
+        # v0.3.0: browser window is still open. User must complete the
+        # challenge in-place, then retry the same command.
+        return [TextContent(
+            type="text",
+            text=f"🛡️ LinkedIn security challenge: {e}\n"
+                 f"  Action: complete the challenge in the open browser window, "
+                 f"then re-run this command.",
         )]
     except Exception as e:
         log.exception("Tool call failed: %s", name)
