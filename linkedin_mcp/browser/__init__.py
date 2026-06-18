@@ -1,8 +1,8 @@
-"""linkedin-mcp-pro browser module — Patchright → agent-browser (v0.2.0).
+"""linkedin-mcp-pro browser module — Patchright → agent-browser (v0.2.0+).
 
 Public surface:
   - BrowserClient: async context manager wrapping the `agent-browser` CLI
-  - Auth helpers: has_valid_session, ensure_session
+  - Auth helpers: has_valid_session, ensure_session, interactive_login
   - Action funcs: send_connection_request, accept_invitation, decline_invitation,
     withdraw_invitation, create_post, delete_post, comment_on_post, react_to_post,
     send_message
@@ -10,8 +10,14 @@ Public surface:
 
 from __future__ import annotations
 
-from .auth import ensure_session, has_valid_session
-from .client import LINKEDIN_BASE, BrowserClient, BrowserError
+from .auth import ensure_session, has_valid_session, interactive_login
+from .client import (
+    DEFAULT_PROFILE_DIR,
+    LINKEDIN_BASE,
+    BrowserChallenge,
+    BrowserClient,
+    BrowserError,
+)
 from .connect import (
     accept_invitation,
     decline_invitation,
@@ -26,9 +32,12 @@ __all__ = [
     # core
     "BrowserClient",
     "BrowserError",
+    "BrowserChallenge",
     "LINKEDIN_BASE",
+    "DEFAULT_PROFILE_DIR",
     "ensure_session",
     "has_valid_session",
+    "interactive_login",
     # connection actions
     "send_connection_request",
     "accept_invitation",

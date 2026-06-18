@@ -13,6 +13,12 @@ Why `agent-browser` (over Patchright / Playwright):
 This module translates the async-Python interface we need into a sequence of
 ``agent-browser`` CLI calls. Captcha/429 detection runs after every
 navigation and delegates to ``SafetyGuard`` for the actual side effects.
+
+Persistent profile (v0.3):
+    The browser session lives at ``~/.linkedin-mcp/profile/`` (overridable
+    via ``BROWSER_PROFILE_DIR`` env). Cookies, localStorage, and
+    fingerprints are reused across runs — no more 7-day cookie expiry
+    pain. Users authenticate once via ``linkedin-mcp login``.
 """
 
 from __future__ import annotations
@@ -37,6 +43,9 @@ from ..safety import (
 
 log = logging.getLogger("linkedin_mcp.browser")
 
+# Default persistent browser profile location. Created on first use.
+DEFAULT_PROFILE_DIR = Path.home() / ".linkedin-mcp" / "profile"
+
 # Patterns indicating LinkedIn served a 429 / rate-limit page
 _RATE_LIMIT_PATTERNS = [
     re.compile(r"you'?re temporarily limited", re.I),
@@ -47,6 +56,19 @@ _RATE_LIMIT_PATTERNS = [
 ]
 _RATE_LIMIT_HOSTS = ("restricted.linkedin.com", "checkpoint.linkedin.com")
 
+# URL patterns indicating LinkedIn is asking for human verification
+# (captcha, MFA, account-restricted, redirect-to-login, etc.). The user
+# must complete these in the open browser window, then re-run their command.
+_CHALLENGE_URL_PATTERNS = (
+    "/checkpoint",
+    "/authwall",
+    "/uas/",  # user-authentication-service (MFA, 2FA)
+    "/login",  # redirect-to-login (session expired or kicked out)
+    "/login-submit",
+    "/challenge",
+    "/account-restricted",
+)
+
 LINKEDIN_BASE = "https://www.linkedin.com"
 
 # Per-call timeout. Long actions (post create) can take longer; bump per-call.
@@ -56,6 +78,16 @@ _LONG_TIMEOUT = 180.0
 
 class BrowserError(Exception):
     """Raised on unrecoverable browser failure (auth wall, network, etc.)."""
+
+
+class BrowserChallenge(BrowserError):
+    """Raised when LinkedIn shows a security challenge the user must solve.
+
+    LinkedIn occasionally shows captchas, MFA prompts, or account-restricted
+    pages. The MCP server cannot solve these automatically — the user must
+    complete the challenge in the open browser window, then re-run the
+    command. The browser session (and profile) is preserved across attempts.
+    """
 
 
 def _find_agent_browser() -> str:
@@ -126,7 +158,17 @@ class BrowserClient:
     # ---- lifecycle -----------------------------------------------------
 
     async def __aenter__(self) -> "BrowserClient":
-        # Pre-set li_at cookie so the session is authenticated from the start
+        # Verify the persistent profile exists. If not, tell the user to run
+        # ``linkedin-mcp login`` first (much better UX than the old
+        # "extract li_at from DevTools" flow).
+        if not self.profile_dir.exists():
+            raise BrowserError(
+                f"No browser profile at {self.profile_dir}. "
+                f"Run `linkedin-mcp login` to authenticate (opens browser, "
+                f"you log in normally, profile is saved)."
+            )
+        # Optional: pre-set li_at cookie for cases where the user still uses
+        # the env var. The browser session is the primary auth method now.
         if self.cfg.li_at:
             _set_li_at_cookie_sync(self.profile_dir, self.cfg.li_at)
         log.info("BrowserClient ready. Profile: %s", self.profile_dir)
@@ -185,12 +227,16 @@ class BrowserClient:
                 break
         log.info("navigated to %s", self._current_url)
 
-        # Check for auth wall
-        if any(p in self._current_url for p in ("/login", "/authwall", "/checkpoint", "/uas/")):
-            raise BrowserError(
-                f"Auth wall detected at {self._current_url}. "
-                f"Refresh your li_at cookie (browser DevTools → Application → Cookies → li_at)."
-            )
+        # Check for security challenges (captcha, MFA, account-restricted).
+        # The user must complete these manually in the open browser window.
+        for pattern in _CHALLENGE_URL_PATTERNS:
+            if pattern in self._current_url:
+                raise BrowserChallenge(
+                    f"LinkedIn security challenge at {self._current_url}\n"
+                    f"Action: complete the challenge (captcha / MFA / verification) "
+                    f"in the open browser window, then re-run this command. "
+                    f"Your profile is preserved at {self.profile_dir}."
+                )
 
         # Check for captcha / 429 in page text
         await self._check_for_challenges()
