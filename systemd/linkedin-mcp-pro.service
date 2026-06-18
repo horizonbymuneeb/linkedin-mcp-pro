@@ -1,0 +1,27 @@
+[Unit]
+Description=linkedin-mcp-pro — Open-source MCP server for LinkedIn (reads + writes with safety)
+Documentation=https://github.com/your-org/linkedin-mcp-pro
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=admin
+Group=admin
+WorkingDirectory=/home/admin/linkedin-mcp-pro
+EnvironmentFile=/etc/linkedin-mcp-pro/linkedin-mcp-pro.env
+ExecStart=/home/admin/linkedin-mcp-pro/.venv/bin/python3 -m linkedin_mcp.server
+Restart=on-failure
+RestartSec=5
+LimitNOFILE=65536
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=false
+# Data dir needs to be writable
+ReadWritePaths=/home/admin/linkedin-mcp-pro/data
+# Allow reading cookie files
+ReadOnlyPaths=/etc/linkedin-mcp-pro
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

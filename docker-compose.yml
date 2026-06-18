@@ -1,0 +1,23 @@
+services:
+  linkedin-mcp-pro:
+    build: .
+    container_name: linkedin-mcp-pro
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - ./data:/app/data
+    # For stdio (Claude Desktop), DO NOT expose ports.
+    # For HTTP transport, uncomment:
+    # ports:
+    #   - "8765:8765"
+    # environment:
+    #   - MCP_TRANSPORT=streamable-http
+    #   - MCP_HOST=0.0.0.0
+    #   - MCP_PORT=8765
+    healthcheck:
+      test: ["CMD", "python3", "-c", "from linkedin_mcp.cli import health; import sys; sys.exit(health())"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
