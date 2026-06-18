@@ -202,6 +202,7 @@ async def test_navigate_succeeds(fake_proc_factory) -> None:
 
 
 async def test_navigate_raises_on_auth_wall(fake_proc_factory) -> None:
+    from linkedin_mcp.browser import BrowserChallenge
     fake_proc_factory.add("open https://www.linkedin.com/feed", "✓ Login\n  https://www.linkedin.com/login")
     with patch("linkedin_mcp.browser.client.asyncio.create_subprocess_exec",
                side_effect=fake_proc_factory.get), \
@@ -214,11 +215,13 @@ async def test_navigate_raises_on_auth_wall(fake_proc_factory) -> None:
         guard = SafetyGuard(cfg, db)
         client = BrowserClient(cfg, db, guard)
         async with client:
-            with pytest.raises(BrowserError, match="Auth wall"):
+            # v0.3.0: /login URL now raises BrowserChallenge (not generic BrowserError)
+            with pytest.raises(BrowserChallenge, match="security challenge"):
                 await client.navigate("https://www.linkedin.com/feed")
 
 
 async def test_captcha_in_body_raises(fake_proc_factory) -> None:
+    from linkedin_mcp.browser import BrowserChallenge
     fake_proc_factory.add("open", "✓ Feed\n  https://www.linkedin.com/feed")
     fake_proc_factory.add("eval", "Please complete a security check", "")
 
