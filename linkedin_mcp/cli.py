@@ -1,14 +1,18 @@
 """linkedin-mcp-pro CLI utilities.
 
-`linkedin-mcp-health` — check server status
-`linkedin-mcp-stats`  — print daily stats
+Commands:
+  linkedin-mcp-health   — check server status, daily usage
+  linkedin-mcp-stats    — print audit log
+  linkedin-mcp-login    — open browser, log in once, save persistent profile (v0.3+)
 """
 
 from __future__ import annotations
 
+import asyncio
 import sys
 from pathlib import Path
 
+from .browser import interactive_login
 from .config import load_config
 from .db import DB
 
@@ -23,10 +27,10 @@ def health() -> int:
 
     errors = cfg.validate()
     if errors:
-        print("⚠️  Config issues:", file=sys.stderr)
+        print(f"⚠️  Config issues:", file=sys.stderr)
         for e in errors:
             print(f"  - {e}", file=sys.stderr)
-        return 1
+        # Don't exit early — still show DB + quotas (informational)
 
     print(f"✓ Config OK")
     print(f"  Server: {cfg.server.host}:{cfg.server.port} ({cfg.server.transport})")
@@ -37,6 +41,11 @@ def health() -> int:
           f"{cfg.safety.business_hours_end:02d}:00 UTC ({', '.join(cfg.safety.business_days)})")
     print(f"  Warmup: {'on' if cfg.safety.warmup_enabled else 'off'}")
     print(f"  Jitter: {cfg.safety.action_jitter_min_seconds}-{cfg.safety.action_jitter_max_seconds}s")
+    print(f"  Browser profile: {cfg.storage.browser_profile_dir}")
+    if cfg.storage.browser_profile_dir.exists():
+        print(f"    [OK] profile exists")
+    else:
+        print(f"    [MISSING] run `linkedin-mcp login` to create it")
 
     try:
         db = DB(cfg.storage.db_path)
@@ -80,6 +89,52 @@ def stats(action: str | None = None, limit: int = 20) -> int:
               f"{'Y' if r['dry_run'] else 'N':<3s}  {target}")
     db.close()
     return 0
+
+
+async def login_async(timeout_seconds: int = 300) -> int:
+    """Open browser, user logs in, profile is saved.
+
+    Returns 0 on success, 1 on failure.
+    """
+    cfg = load_config()
+    profile = Path(cfg.storage.browser_profile_dir)
+
+    if profile.exists():
+        from .browser import has_valid_session
+        if has_valid_session(profile):
+            print(f"Existing session found at {profile}.", file=sys.stderr)
+            ans = input("Overwrite with new login? [y/N] ").strip().lower()
+            if ans not in ("y", "yes"):
+                print("Aborted. Existing session preserved.", file=sys.stderr)
+                return 0
+
+    print(f"Opening browser to LinkedIn login...", file=sys.stderr)
+    print(f"Profile will be saved at: {profile}", file=sys.stderr)
+    print(f"", file=sys.stderr)
+
+    try:
+        success = await interactive_login(cfg)
+    except KeyboardInterrupt:
+        print(f"\nLogin cancelled by user.", file=sys.stderr)
+        return 1
+    except Exception as e:
+        print(f"❌ Login failed: {e}", file=sys.stderr)
+        return 1
+
+    if success:
+        print(f"", file=sys.stderr)
+        print(f"✓ Login complete. Profile saved at: {profile}", file=sys.stderr)
+        print(f"  All future linkedin-mcp calls will use this session.", file=sys.stderr)
+        print(f"  Run `linkedin-mcp serve` to start the MCP server.", file=sys.stderr)
+        return 0
+    else:
+        print(f"❌ Login did not complete. URL did not reach /feed/.", file=sys.stderr)
+        return 1
+
+
+def login() -> int:
+    """Sync wrapper for the login command."""
+    return asyncio.run(login_async())
 
 
 if __name__ == "__main__":
