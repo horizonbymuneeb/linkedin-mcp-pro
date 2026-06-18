@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linkedin-mcp-pro"
-version = "0.1.0"
+version = "0.3.0"
 description = "Open-source MCP server for LinkedIn — profiles, search, jobs, posts, connections, messages. Self-hosted, ban-safe, MIT licensed."
 readme = "README.md"
 license = {text = "MIT"}
@@ -56,11 +56,12 @@ dev = [
 linkedin-mcp-pro = "linkedin_mcp.server:main"
 linkedin-mcp-health = "linkedin_mcp.cli:health"
 linkedin-mcp-stats = "linkedin_mcp.cli:stats"
+linkedin-mcp-login = "linkedin_mcp.cli:login"
 
 [project.urls]
-Homepage = "https://github.com/your-org/linkedin-mcp-pro"
-Repository = "https://github.com/your-org/linkedin-mcp-pro"
-Issues = "https://github.com/your-org/linkedin-mcp-pro/issues"
+Homepage = "https://github.com/horizonbymuneeb/linkedin-mcp-pro"
+Repository = "https://github.com/horizonbymuneeb/linkedin-mcp-pro"
+Issues = "https://github.com/horizonbymuneeb/linkedin-mcp-pro/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]
