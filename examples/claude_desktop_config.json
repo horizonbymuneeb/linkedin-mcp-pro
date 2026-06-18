@@ -1,0 +1,18 @@
+{
+  "mcpServers": {
+    "linkedin": {
+      "_comment": "linkedin-mcp-pro — open-source LinkedIn MCP. See https://github.com/your-org/linkedin-mcp-pro",
+      "command": "linkedin-mcp-pro",
+      "env": {
+        "LI_AT_FILE": "/etc/linkedin-mcp-pro/li_at",
+        "DAILY_LIMIT_CONNECTION_REQUESTS": "20",
+        "DAILY_LIMIT_POSTS": "2",
+        "DAILY_LIMIT_MESSAGES": "30",
+        "BUSINESS_HOURS_START": "9",
+        "BUSINESS_HOURS_END": "20",
+        "WARMUP_ENABLED": "true",
+        "LOG_LEVEL": "INFO"
+      }
+    }
+  }
+}
