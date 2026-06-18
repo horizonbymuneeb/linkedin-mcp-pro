@@ -114,7 +114,11 @@ class ServerConfig:
 @dataclass
 class StorageConfig:
     db_path: Path = Path("./data/linkedin-mcp-pro.db")
-    browser_profile_dir: Path = Path("./data/browser-profile")
+    # v0.3.0: default profile moved outside the project dir so it survives
+    # `git clean` and reinstalls. Users auth once via `linkedin-mcp login`.
+    browser_profile_dir: Path = field(
+        default_factory=lambda: Path.home() / ".linkedin-mcp" / "profile"
+    )
     audit_log_retention_days: int = 90
 
 
@@ -188,7 +192,10 @@ def load_config() -> Config:
         storage=StorageConfig(
             db_path=Path(os.environ.get("DB_PATH", "./data/linkedin-mcp-pro.db")),
             browser_profile_dir=Path(
-                os.environ.get("BROWSER_PROFILE_DIR", "./data/browser-profile")
+                os.environ.get(
+                    "LINKEDIN_MCP_PROFILE_DIR",
+                    str(Path.home() / ".linkedin-mcp" / "profile"),
+                )
             ),
             audit_log_retention_days=_get_int("AUDIT_LOG_RETENTION_DAYS", 90),
         ),
