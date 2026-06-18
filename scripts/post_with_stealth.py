@@ -46,8 +46,18 @@ SCREENSHOT_PREFIX = "/tmp/li_post"
 
 def detect_mode(force: str | None) -> str:
     """Return 'profile' or 'cookie' based on availability and --profile-only/--cookie-only."""
-    has_profile = Path(PROFILE_DIR).is_dir() and (Path(PROFILE_DIR) / "Local State").exists()
-    has_cookie = Path(COOKIE_PATH).exists() or os.access(COOKIE_PATH, os.R_OK)
+    # Profile is detected if EITHER:
+    #   - state.json exists (from cookie_to_profile.py, more reliable for HttpOnly)
+    #   - Default/Cookies DB exists (from bootstrap_session.sh / linkedin-mcp login)
+    p = Path(PROFILE_DIR)
+    has_profile = p.is_dir() and (
+        (p / "state.json").exists() or (p / "Default" / "Cookies").exists()
+    )
+    # Path.exists() can raise PermissionError on root-only files/dirs; treat as 'no cookie'
+    try:
+        has_cookie = Path(COOKIE_PATH).is_file()
+    except (PermissionError, OSError):
+        has_cookie = False
 
     if force == "profile":
         if not has_profile:
@@ -93,16 +103,13 @@ async def post(post_text: str, mode: str) -> int:
 
     async with async_playwright() as p:
         if mode == "profile":
-            print(f"\u2192 launching chromium (persistent profile: {PROFILE_DIR})")
-            ctx = await p.chromium.launch_persistent_context(
-                user_data_dir=PROFILE_DIR,
+            state_json = Path(PROFILE_DIR) / "state.json"
+            use_storage_state = state_json.is_file()
+            profile_kind = "storage_state" if use_storage_state else "persistent context"
+            print(f"\u2192 launching chromium (profile mode: {profile_kind})")
+            browser = await p.chromium.launch(
                 headless=True,
                 proxy={"server": PROXY} if PROXY else None,
-                viewport={"width": 1920, "height": 1080},
-                user_agent=USER_AGENT,
-                locale="en-US",
-                timezone_id="Asia/Karachi",
-                color_scheme="light",
                 args=[
                     "--disable-blink-features=AutomationControlled",
                     "--no-sandbox",
@@ -110,6 +117,32 @@ async def post(post_text: str, mode: str) -> int:
                     "--disable-dev-shm-usage",
                 ],
             )
+            if use_storage_state:
+                ctx = await browser.new_context(
+                    storage_state=str(state_json),
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent=USER_AGENT,
+                    locale="en-US",
+                    timezone_id="Asia/Karachi",
+                    color_scheme="light",
+                )
+            else:
+                ctx = await browser.launch_persistent_context(
+                    user_data_dir=PROFILE_DIR,
+                    headless=True,
+                    proxy={"server": PROXY} if PROXY else None,
+                    viewport={"width": 1920, "height": 1080},
+                    user_agent=USER_AGENT,
+                    locale="en-US",
+                    timezone_id="Asia/Karachi",
+                    color_scheme="light",
+                    args=[
+                        "--disable-blink-features=AutomationControlled",
+                        "--no-sandbox",
+                        "--disable-setuid-sandbox",
+                        "--disable-dev-shm-usage",
+                    ],
+                )
             page = ctx.pages[0] if ctx.pages else await ctx.new_page()
         else:
             cookie = read_cookie()
