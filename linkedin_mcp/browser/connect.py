@@ -3,20 +3,40 @@
 All actions navigate to the target's profile, find the Connect button via
 the agent-browser snapshot, and click it. Personalized notes go through a
 second "Add a note" dialog.
+
+Note template rotation:
+    Sending the same note to multiple people creates a fingerprint that
+    LinkedIn can detect as automated behavior. To avoid this, we provide
+    a set of templates and rotate through them with light variation.
+
+    If a custom note is passed to ``send_connection_request``, that note is
+    used verbatim (LLM-personalized paths are the user's responsibility).
+    If no note is passed, the safety layer picks from the configured
+    templates via ``pick_note()`` (see below).
 """
 
 from __future__ import annotations
 
 import logging
+import random
 import re
 from typing import Any
 
-from .client import BrowserClient, BrowserError, LINKEDIN_BASE
+from .client import BrowserClient, LINKEDIN_BASE
 
 log = logging.getLogger("linkedin_mcp.browser.connect")
 
 MAX_NOTE_LENGTH = 300
 _VALID_PUBLIC_ID = re.compile(r"^[a-zA-Z0-9\-_.]{3,100}$")
+
+# Default templates. Callers can override via config.NOTE_TEMPLATES.
+_DEFAULT_TEMPLATES: tuple[str, ...] = (
+    "Hi {first_name} — saw your work on {topic}. I'm building similar things in {my_field}, would love to compare notes.",
+    "Hey {first_name}, your post about {topic} resonated. Fellow {my_field} person here, would enjoy connecting.",
+    "Hi {first_name} — noticed we're both working in {my_field}. I recently {my_activity}, would love to chat.",
+    "{first_name}, your background at {company} is interesting. I'm in {my_field}, just {my_activity}. Let's connect.",
+    "Hi {first_name} — came across your profile while looking for {my_field} folks. Would love to be in touch.",
+)
 
 
 def _validate_public_id(public_id: str) -> None:
@@ -30,6 +50,34 @@ def _validate_public_id(public_id: str) -> None:
 def _validate_note(note: str) -> None:
     if len(note) > MAX_NOTE_LENGTH:
         raise ValueError(f"Note too long: {len(note)} > {MAX_NOTE_LENGTH}")
+
+
+def pick_note(
+    *,
+    first_name: str = "",
+    topic: str = "your work",
+    my_field: str = "tech",
+    my_activity: str = "shipped a new project",
+    company: str = "your company",
+    templates: tuple[str, ...] | list[str] | None = None,
+) -> str:
+    """Pick a random note template and fill in variables.
+
+    Use this when you don't have a personalized note from the LLM but still
+    want the safety benefit of varied wording across connection requests.
+
+    All variables are optional. Default fillers keep the note grammatical
+    even with no context.
+    """
+    pool = tuple(templates) if templates else _DEFAULT_TEMPLATES
+    template = random.choice(pool)
+    return template.format(
+        first_name=first_name or "there",
+        topic=topic,
+        my_field=my_field,
+        my_activity=my_activity,
+        company=company,
+    ).strip()
 
 
 # ---------------------------------------------------------------------------
