@@ -207,23 +207,104 @@ For a PM at Figma: *"Hey James, your talk on design systems + LLMs was great. I'
 
 ---
 
-### Engage with content (likes, comments)
+### Engage with content (comments, reactions)
 
 **You type:**
 
-> "Like and comment 'great post!' on the 3 most recent posts from my connections about AI."
+> "Comment 'Great insights on RAG!' on this post: https://www.linkedin.com/feed/update/urn:li:activity:1234567890/"
 
-**Current state (v0.1):** Comments and reactions are stubbed — they require a post URL, not just a URN, which needs a small v0.2 schema change.
+**What happens:**
 
-**Workaround in v0.1:**
+1. LLM calls `comment_on_post(target=url, text="...")` 
+2. Browser navigates to the post URL
+3. Finds the comment textbox, fills it
+4. Clicks Post
+5. Comment is submitted
 
-> "Show me the URLs of the 3 most recent posts from my connections about AI."
+**You type:**
 
-→ LLM fetches the feed and shows URLs.
+> "Like the post at https://www.linkedin.com/feed/update/urn:li:activity:9876543210/ and also add a 'Celebrate' reaction to the most recent AI post in my feed."
 
-Then you can navigate to those URLs manually, or wait for v0.2.
+**What happens:**
 
-**Track this:** https://github.com/horizonbymuneeb/linkedin-mcp-pro/issues
+1. LLM calls `react_to_post(target=url, reaction_type="LIKE")` for the first
+2. Calls `get_feed(limit=5)` to find the AI post
+3. Calls `react_to_post(target=urn, reaction_type="CELEBRATE")` for the second
+
+**Reaction types:** LIKE, CELEBRATE, INSIGHTFUL, LOVE, SUPPORT, FUNNY, CURIOUS, MIND
+
+**Tip:** You can pass either a full URL or a URN (e.g. `urn:li:activity:1234`) — both work.
+
+---
+
+### Post with an image or video
+
+**You type:**
+
+> "Post this image with the caption 'New office setup! 🚀' and make it public."
+
+**What happens:**
+
+1. LLM calls `create_post(text="New office setup! 🚀", media_path="/home/me/photo.jpg", visibility="PUBLIC")`
+2. Browser navigates to /feed/
+3. Clicks "Start a post"
+4. Fills the caption
+5. Clicks the photo icon
+6. Uploads the file from your local path
+7. Clicks Post
+8. Post goes live
+
+**Supported formats:** `.jpg`, `.jpeg`, `.png`, `.gif`, `.mp4`, `.mov` (max 200MB)
+
+**You type:**
+
+> "Show me a preview of a post with the image /tmp/screenshot.png first."
+
+→ Uses `dry_run=true` — LLM shows what would be posted, doesn't actually post.
+
+---
+
+### Delete a post
+
+**You type:**
+
+> "Delete the post at https://www.linkedin.com/feed/update/urn:li:activity:12345/"
+
+**What happens:**
+
+1. LLM calls `delete_post(target=url)` (with safety check)
+2. Browser navigates to the post
+3. Opens the "..." overflow menu
+4. Clicks "Delete"
+5. Confirms the deletion in the modal
+6. Post is removed
+
+**Safety:** Deletion is logged in the audit log. You can use `dry_run=true` to preview.
+
+---
+
+### Send connection requests with template notes
+
+**You type:**
+
+> "Send 5 connection requests to ML engineers at Spotify. Use the note template rotation, my field is 'ML infrastructure'."
+
+**What happens:**
+
+1. LLM calls `search_people(keywords="ML engineer", current_company="Spotify", limit=5)`
+2. For each result, LLM calls `send_connection_request(public_id=..., note=connect.pick_note(...))`
+3. **Note variation:** The 5 notes are all different (rotated from templates), so LinkedIn can't fingerprint them as automated
+4. Safety layer caps at 5/day
+
+**Sample notes (auto-generated, all unique):**
+
+1. "Hi Anna — saw your work on recommendation systems. I'm building similar things in ML infrastructure, would love to compare notes."
+2. "Hey Erik, your post about vector search resonated. Fellow ML infrastructure person here, would enjoy connecting."
+3. "Hi Maria — noticed we're both working in ML infrastructure. I recently shipped a RAG pipeline, would love to chat."
+4. "James, your background at Spotify is interesting. I'm in ML infrastructure, just open-sourced linkedin-mcp-pro. Let's connect."
+5. "Hi Sarah — came across your profile while looking for ML infrastructure folks. Would love to be in touch."
+
+**Why this matters:** Sending the same note to 20 people is a known LinkedIn spam signal. Template rotation makes your outreach look human.
 
 ---
 
