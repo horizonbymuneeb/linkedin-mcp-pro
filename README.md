@@ -10,7 +10,7 @@
 
 ## What is it?
 
-`linkedin-mcp-pro` is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that gives Claude, Cursor, Windsurf, and any other MCP-compatible AI assistant full access to your LinkedIn account — while keeping you in control of *how* it acts on your behalf.
+linkedin-mcp-pro is a [Model Context Protocol (MCP)](https://modelcontextprotocol.io) server that exposes your LinkedIn account as 23 tools for any MCP-compatible client — while keeping you in control of *how* those tools act on your behalf.
 
 **22 tools, organized in 3 groups:**
 
@@ -32,7 +32,7 @@
 | **Self-hostable** | ✅ Docker / systemd / bare | ❌ |
 | **Ban safety** | Built-in (warmup, jitter, business hours) | Their responsibility |
 | **Rate limits** | You control (DB-enforced) | Their tier |
-| **AI integration** | Any MCP client (Claude, Cursor, etc.) | Their dashboard |
+| **MCP integration** | Any MCP client (Claude Desktop, Cursor, Windsurf, etc.) | Their dashboard |
 
 ---
 
@@ -214,7 +214,7 @@ Or if installed via `pip install -e .`:
 
 > "Mujhe 20 recruiters ko LinkedIn pe connect request bhejne hain, 1 post karo, aur 5 jobs search karo 'AI engineer' in San Francisco."
 
-Claude will:
+The MCP client will:
 1. Call `search_jobs(keywords="AI engineer", location="San Francisco", limit=5)` (read)
 2. Call `create_post(text="...", visibility="PUBLIC", dry_run=false)` (write, safety-checked)
 3. Call `send_connection_request(public_id="recruiter1", note="...")` × 20 (writes, jittered, capped)

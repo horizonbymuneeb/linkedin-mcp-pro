@@ -170,7 +170,7 @@ Audit log is auto-pruned at 90 days (configurable via
 - **No proxy rotation.** Adds complexity, often detected.
 - **No randomized fingerprints per session.** Stable fingerprint is more
   human-like than a new one every request.
-- **No AI-generated connection notes** (in v0.1). Same note = same fingerprint.
+- **No template-generated connection notes** (in v0.1). Same note = same fingerprint.
   Different notes per invite = better. Future: add a `note_templates` config.
 - **No auto-CAPTCHA solving.** Banned in 24h if attempted.
 - **No scraping user data at scale.** We only act on what the user explicitly

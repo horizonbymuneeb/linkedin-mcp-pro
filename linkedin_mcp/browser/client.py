@@ -3,8 +3,8 @@
 Why `agent-browser` (over Patchright / Playwright):
 
   * **Real Chrome** (Chrome for Testing) — better stealth than Chromium.
-  * **AI-native design** — `snapshot` returns accessibility tree with refs
-    (``@e2``, ``@e3``) that the LLM/MCP layer can act on.
+  * **Ref-based interaction** — `snapshot` returns an accessibility tree with
+    refs (``@e2``, ``@e3``) for stable element targeting.
   * **Vercel Labs backed**, Apache-2.0, 36k+ stars, very active.
   * **Smaller deps** — Rust binary, no Chromium download.
   * **Trade-off**: subprocess overhead (~50-100ms/call). For our use case
