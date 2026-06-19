@@ -7,7 +7,7 @@
   {% include "_shell.html" %}
 </head>
 <body>
-<main class="ml-[240px] pt-14 min-h-screen">
+<main class="pt-14 min-h-screen md:ml-[240px]">
     <div class="max-w-6xl mx-auto px-6 py-8">
 
 <a href="/" role="button" class="secondary" style="float:right">← Dashboard</a>
@@ -81,26 +81,49 @@ async function jpost(url, body) {
   try { return JSON.parse(text); }
   catch { throw new Error(text); }
 }
-
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
 async function loadHealth() {
   try {
     const h = await jget('/api/profile/health');
-    const cls = h.overall_ok ? 'ok' : 'alert';
-    document.getElementById('health').innerHTML = `
-      <span class="${cls}" style="font-size:18px">${h.overall_ok ? '✓ LOGGED IN' : '✗ NOT LOGGED IN'}</span>
-      <div style="margin-top:12px">
-        <div class="stat"><strong>${h.cookie_count}</strong><span>cookies</span></div>
-        <div class="stat"><strong>${h.storage_state_age_days}</strong><span>days old</span></div>
-        <div class="stat"><strong>${h.linkedin_http_status}</strong><span>HTTP status</span></div>
-        <div class="stat"><strong>${h.linkedin_elapsed_ms}ms</strong><span>latency</span></div>
-      </div>
-      <details style="margin-top:12px">
-        <summary>raw</summary>
-        <pre>${JSON.stringify(h, null, 2)}</pre>
-      </details>
-    `;
+    const ok = h.overall_ok;
+    const cls = ok ? 'ok' : 'alert';
+    const el = document.getElementById('health');
+    el.textContent = '';
+    const span = document.createElement('span');
+    span.className = cls;
+    span.style.fontSize = '18px';
+    span.textContent = ok ? '✓ LOGGED IN' : '✗ NOT LOGGED IN';
+    el.appendChild(span);
+    const stats = document.createElement('div');
+    stats.style.marginTop = '12px';
+    for (const [k, label] of [[h.cookie_count, 'cookies'], [h.storage_state_age_days, 'days old'], [h.linkedin_http_status, 'HTTP status'], [(h.linkedin_elapsed_ms ?? 0) + 'ms', 'latency']]) {
+      const d = document.createElement('div');
+      d.className = 'stat';
+      const v = document.createElement('strong');
+      v.textContent = k;
+      const s = document.createElement('span');
+      s.textContent = label;
+      d.appendChild(v); d.appendChild(s);
+      stats.appendChild(d);
+    }
+    el.appendChild(stats);
+    const det = document.createElement('details');
+    det.style.marginTop = '12px';
+    const sum = document.createElement('summary');
+    sum.textContent = 'raw';
+    const pre = document.createElement('pre');
+    pre.textContent = JSON.stringify(h, null, 2);
+    det.appendChild(sum); det.appendChild(pre);
+    el.appendChild(det);
   } catch (e) {
-    document.getElementById('health').innerHTML = `<span class="alert">${e.message}</span>`;
+    const el = document.getElementById('health');
+    el.textContent = '';
+    const span = document.createElement('span');
+    span.className = 'alert';
+    span.textContent = e.message || 'load failed';
+    el.appendChild(span);
   }
 }
 
@@ -116,29 +139,42 @@ async function loadCookies() {
     const consCls = consistency === 'match' ? 'ok' : 'warn';
 
     // Cookie table
-    let rows = '';
+    const tbody = document.createElement('tbody');
     for (const ck of c.cookies) {
-      const auth = ck._is_auth ? '<span class="pill">⭐AUTH</span>' : '';
-      const secure = ck.secure ? '🔒' : '';
-      const httponly = ck.httpOnly ? '🚫JS' : '';
-      const exp = ck.expires && ck.expires > 0 ? new Date(ck.expires * 1000).toISOString().slice(0,10) : 'session';
-      rows += `<tr><td>${auth}${secure}${httponly}</td><td><code>${ck.name}</code></td><td><code>${ck.value_masked || ck.value}</code></td><td>${ck.domain}</td><td>${exp}</td></tr>`;
+      const tr = document.createElement('tr');
+      const tdi = document.createElement('td');
+      if (ck._is_auth) { const sp = document.createElement('span'); sp.className = 'pill'; sp.textContent = '⭐AUTH'; tdi.appendChild(sp); }
+      if (ck.secure) tdi.appendChild(document.createTextNode('🔒'));
+      if (ck.httpOnly) tdi.appendChild(document.createTextNode('🚫JS'));
+      tr.appendChild(tdi);
+      const tdn = document.createElement('td'); const cn = document.createElement('code'); cn.textContent = ck.name || ''; tdn.appendChild(cn); tr.appendChild(tdn);
+      const tdv = document.createElement('td'); const cv = document.createElement('code'); cv.textContent = ck.value_masked || ck.value || ''; tdv.appendChild(cv); tr.appendChild(tdv);
+      const tdd = document.createElement('td'); tdd.textContent = ck.domain || ''; tr.appendChild(tdd);
+      const tde = document.createElement('td'); tde.textContent = (ck.expires && ck.expires > 0) ? new Date(ck.expires * 1000).toISOString().slice(0,10) : 'session'; tr.appendChild(tde);
+      tbody.appendChild(tr);
     }
-
-    document.getElementById('cookie-list').innerHTML = `
-      <div style="margin-bottom:12px">
-        <span class="stat"><strong>${li.value_masked}</strong><span>li_at file (${li.bytes}B, mode=${li.mode})</span></span>
-        <span class="stat"><strong>${st.bytes}B</strong><span>storage_state.json</span></span>
-        <span class="stat ${consCls}"><strong>${consistency}</strong><span>consistency</span></span>
-      </div>
-      <table>
-        <thead><tr><th></th><th>name</th><th>value (masked)</th><th>domain</th><th>expires</th></tr></thead>
-        <tbody>${rows}</tbody>
-      </table>
-    `;
-    document.getElementById('raw-json').textContent = JSON.stringify(c, null, 2);
+    const list = document.getElementById('cookie-list');
+    list.textContent = '';
+    const top = document.createElement('div');
+    top.style.marginBottom = '12px';
+    const mkStat = (val, label, cls) => {
+      const s = document.createElement('span'); s.className = 'stat' + (cls ? ' ' + cls : '');
+      const v = document.createElement('strong'); v.textContent = String(val); s.appendChild(v);
+      const l = document.createElement('span'); l.textContent = label; s.appendChild(l);
+      return s;
+    };
+    top.appendChild(mkStat(li.value_masked, `li_at file (${li.bytes}B, mode=${li.mode})`));
+    top.appendChild(mkStat(st.bytes + 'B', 'storage_state.json'));
+    top.appendChild(mkStat(consistency, 'consistency', consCls));
+    list.appendChild(top);
+    const table = document.createElement('table');
+    const thead = document.createElement('thead');
+    thead.innerHTML = '<tr><th></th><th>name</th><th>value</th><th>domain</th><th>expires</th></tr>';
+    table.appendChild(thead);
+    table.appendChild(tbody);
+    list.appendChild(table);
   } catch (e) {
-    document.getElementById('cookie-list').innerHTML = `<span class="alert">${e.message}</span>`;
+    document.getElementById('cookie-list').textContent = e.message;
   }
 }
 
@@ -150,10 +186,13 @@ async function loginHeadless() {
 }
 async function loginStart(headless) {
   const status = document.getElementById('login-status');
-  status.innerHTML = '⏳ launching browser...';
+  status.textContent = '⏳ launching browser...';
   try {
     const r = await jpost('/api/login/start?headless=' + headless, {});
-    status.innerHTML = `<span class="ok">✓ Login process started (PID ${r.pid})</span><br><small>${r.tip}</small>`;
+    status.textContent = '';
+    const ok = document.createElement('span'); ok.className = 'ok'; ok.textContent = '✓ Login process started (PID ' + r.pid + ')'; status.appendChild(ok);
+    status.appendChild(document.createElement('br'));
+    const small = document.createElement('small'); small.textContent = r.tip || ''; status.appendChild(small);
     document.getElementById('login-cancel').disabled = false;
     pollLogin();
   } catch (e) {
@@ -183,17 +222,31 @@ async function setLiAt() {
   const value = document.getElementById('li-at-input').value.trim();
   if (!value) { alert('Paste li_at value first'); return; }
   const status = document.getElementById('li-at-status');
-  status.innerHTML = '⏳ saving and testing...';
+  status.textContent = '⏳ saving and testing...';
   try {
     const r = await jpost('/api/cookies/li_at', {value, note: 'set via web UI'});
-    const pathInfo = r.wrote.fallback_used
-      ? `<span class="warn">⚠ fallback path used</span> written to <code>${r.wrote.path}</code> (requested <code>${r.wrote.requested_path}</code> not writable)`
-      : `saved to <code>${r.wrote.path}</code> (${r.wrote.bytes}B, mode ${r.wrote.mode})`;
-    if (r.health.is_logged_in) {
-      status.innerHTML = `<span class="ok">✓ Saved + login verified!</span> (${r.health.elapsed_ms}ms, title: "${r.health.title}")<br><small>${pathInfo}</small>`;
+    status.textContent = '';
+    const pathInfo = document.createElement('small');
+    if (r.wrote.fallback_used) {
+      const w = document.createElement('span'); w.className = 'warn'; w.textContent = '⚠ fallback path used'; pathInfo.appendChild(w);
+      pathInfo.appendChild(document.createTextNode(' written to '));
+      const c1 = document.createElement('code'); c1.textContent = r.wrote.path; pathInfo.appendChild(c1);
+      pathInfo.appendChild(document.createTextNode(' (requested '));
+      const c2 = document.createElement('code'); c2.textContent = r.wrote.requested_path; pathInfo.appendChild(c2);
+      pathInfo.appendChild(document.createTextNode(' not writable)'));
     } else {
-      status.innerHTML = `<span class="warn">⚠ Saved but login check failed: HTTP ${r.health.http_status} title="${r.health.title}"</span><br><small>${pathInfo}</small>`;
+      pathInfo.appendChild(document.createTextNode('saved to '));
+      const c1 = document.createElement('code'); c1.textContent = r.wrote.path; pathInfo.appendChild(c1);
+      pathInfo.appendChild(document.createTextNode(` (${r.wrote.bytes}B, mode ${r.wrote.mode})`));
     }
+    if (r.health.is_logged_in) {
+      const ok = document.createElement('span'); ok.className = 'ok'; ok.textContent = '✓ Saved + login verified!'; status.appendChild(ok);
+      status.appendChild(document.createTextNode(` (${r.health.elapsed_ms}ms, title: "${r.health.title || ''}")`));
+    } else {
+      const wn = document.createElement('span'); wn.className = 'warn'; wn.textContent = `⚠ Saved but login check failed: HTTP ${r.health.http_status} title="${r.health.title || ''}"`; status.appendChild(wn);
+    }
+    status.appendChild(document.createElement('br'));
+    status.appendChild(pathInfo);
     loadHealth(); loadCookies();
   } catch (e) {
     status.innerHTML = `<span class="alert">✗ ${e.message}</span>`;

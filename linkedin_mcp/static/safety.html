@@ -6,10 +6,9 @@
   <title>Ban-Safety Gate · linkedin-mcp-pro</title>
   {% include "_shell.html" %}
 </head>
-<body>
-<main class="ml-[240px] pt-14 min-h-screen">
-<div class="max-w-6xl mx-auto px-6 py-8">
-<main class="animate-fade-in">
+<body x-data="safetyPanel()" x-init="init()">
+<main class="pt-14 min-h-screen md:ml-[240px]">
+<div class="max-w-6xl mx-auto px-6 py-8 animate-fade-in">
   <div class="rounded-2xl bg-gradient-to-br from-red-500 to-orange-500 text-white p-8 shadow-xl mb-8">
     <h1 class="text-3xl font-bold mb-2">Ban-Safety Gate</h1>
     <p class="text-orange-50">Stay within safe limits to keep your account healthy</p>
@@ -84,8 +83,8 @@
       <input type="text" @keydown.enter="addBlacklist($event)" placeholder="Type keyword + Enter" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-li-blue focus:border-transparent">
     </div>
   </div>
-  </div>
-</main>
+</div>
+</div>
 
 <script>
 function safetyPanel() {

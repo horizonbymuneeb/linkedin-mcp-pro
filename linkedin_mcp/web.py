@@ -25,7 +25,7 @@ from typing import Any, Optional
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from .analytics import Analytics
 from .config import load_config
@@ -87,7 +87,7 @@ class DraftRequest(BaseModel):
 
 
 class PostRequest(BaseModel):
-    text: str
+    text: str = Field(..., min_length=1, max_length=10000, description="Post body, 1-10000 chars")
     dry_run: bool = False
 
 
@@ -269,6 +269,15 @@ def api_drafts(req: DraftRequest) -> dict[str, Any]:
 
 @app.post("/api/post")
 def api_post(req: PostRequest) -> dict[str, Any]:
+    # Dry-run short-circuit: return preview without running safety gate that
+    # would otherwise raise. This lets callers test post format/validity
+    # without consuming quota or hitting real rate limits.
+    if req.dry_run:
+        return {
+            "dry_run": True,
+            "would_post": req.text[:200] + ("..." if len(req.text) > 200 else ""),
+            "text_len": len(req.text),
+        }
     db = _db()
     safety = _safety(db)
     try:
@@ -277,18 +286,16 @@ def api_post(req: PostRequest) -> dict[str, Any]:
                 action="post",
                 target="self",
                 payload={"text": req.text},
-                dry_run=req.dry_run,
+                dry_run=False,
             )
         )
     except SafetyError as e:
         raise HTTPException(status_code=400, detail=str(e))
-    if req.dry_run:
-        return {"dry_run": True, "would_post": req.text[:200] + ("..." if len(req.text) > 200 else "")}
     # Real post would call the browser-based create_post here. The web UI
     # is a thin layer; the actual LinkedIn write happens via the MCP server's
     # create_post tool. For now we surface the safety decision.
-    db.audit("post", "self", "dry_run" if req.dry_run else "success",
-             dry_run=1 if req.dry_run else 0,
+    db.audit("post", "self", "success",
+             dry_run=False,
              detail={"text_len": len(req.text), "via": "web_ui"})
     return {"ok": True, "dry_run": False, "text_len": len(req.text)}
 

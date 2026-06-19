@@ -4,5 +4,5 @@ Self-hosted, ban-safe, MIT licensed. Inspired by the safety and feature
 surface of commercial tools, built for transparency and control.
 """
 
-__version__ = "2.3.3"
+__version__ = "2.3.7"
 __license__ = "MIT"

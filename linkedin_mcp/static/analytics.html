@@ -5,9 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Analytics · linkedin-mcp-pro</title>
   {% include "_shell.html" %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
-<body>
-<main class="ml-[240px] pt-14 min-h-screen">
+<body x-data="analyticsPanel()" x-init="init()">
+<main class="pt-14 min-h-screen md:ml-[240px]">
     <div class="max-w-6xl mx-auto px-6 py-8">
 
 
@@ -60,7 +61,7 @@
 
   <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
     <h3 class="text-lg font-semibold mb-4">Hour-of-day heatmap</h3>
-    <div class="grid grid-cols-12 gap-1">
+    <div class="grid grid-cols-6 md:grid-cols-12 lg:grid-cols-24 gap-1">
       <template x-for="h in 24" :key="h">
         <div class="aspect-square rounded text-xs flex items-center justify-center font-mono" :class="heatColor(hourValue(h-1))" :title="(h-1) + ':00 — ' + hourValue(h-1) + ' actions'" x-text="(h-1).toString().padStart(2,'0')"></div>
       </template>
@@ -94,7 +95,8 @@ function analyticsPanel() {
       { title: 'My morning routine for deep work', metrics: '156 reactions · 28 comments' },
     ],
     chart: null,
-    heatData: Array.from({ length: 24 }, (_, h) => Math.round(5 + 30 * Math.exp(-Math.pow((h - 14) / 4, 2)) + Math.random() * 5)),
+    chartData: { labels: [], data: [] },
+    heatData: Array.from({ length: 24 }, (_, h) => Math.round(5 + 30 * Math.exp(-Math.pow((h - 14) / 4, 2)))),
     hourValue(h) { return this.heatData[h] || 0; },
     heatColor(v) {
       if (v < 10) return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-900 dark:text-cyan-100';
@@ -109,16 +111,18 @@ function analyticsPanel() {
         if (r.ok) {
           const d = await r.json();
           if (d.kpis) this.kpis = d.kpis;
+          if (d.chart && Array.isArray(d.chart.data)) this.chartData = d.chart;
+          else if (d.daily && Array.isArray(d.daily)) this.chartData = { labels: d.daily.map(x => x.date || x.label), data: d.daily.map(x => x.value || x.engagements || 0) };
         }
-      } catch (e) {}
+      } catch (e) { console.warn('summary load failed', e); }
       this.renderChart();
     },
     renderChart() {
       const ctx = document.getElementById('engagementChart');
-      if (!ctx) return;
+      if (!ctx || typeof Chart === 'undefined') return;
       if (this.chart) this.chart.destroy();
-      const labels = Array.from({ length: this.days }, (_, i) => 'D' + (i + 1));
-      const data = Array.from({ length: this.days }, () => Math.round(20 + Math.random() * 80));
+      const labels = this.chartData.labels || Array.from({ length: this.days }, (_, i) => 'D' + (i + 1));
+      const data = this.chartData.data || Array.from({ length: this.days }, () => 0);
       this.chart = new Chart(ctx, {
         type: 'bar',
         data: { labels, datasets: [{ label: 'Engagements', data, backgroundColor: '#0a66c2', borderRadius: 4 }] },

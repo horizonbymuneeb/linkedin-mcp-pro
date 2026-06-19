@@ -176,14 +176,21 @@
     2. Wrap its content in <main class="ml-[240px] pt-[56px] min-h-screen"> ... </main>
 -->
 <div x-data="{
-    theme: localStorage.getItem('theme') || 'light',
+    theme: (() => { try { return localStorage.getItem('theme') || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'); } catch(e) { return 'light'; } })(),
+    sidebarOpen: window.innerWidth >= 1024,
     toggleTheme() { this.theme = this.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem('theme', this.theme); document.documentElement.classList.toggle('dark', this.theme==='dark'); },
-    sidebarOpen: true,
-    init() { document.documentElement.classList.toggle('dark', this.theme==='dark'); }
-  }" x-init="init()" :class="theme">
+    init() {
+      document.documentElement.classList.toggle('dark', this.theme==='dark');
+      window.addEventListener('resize', () => { if (window.innerWidth >= 1024) this.sidebarOpen = true; });
+      this.$watch('theme', v => { document.documentElement.classList.toggle('dark', v==='dark'); localStorage.setItem('theme', v); });
+    }
+  }" x-init="init()">
 
   <!-- Top bar -->
   <header class="fixed top-0 left-0 right-0 h-14 bg-[var(--surface-card)] hairline-b z-40 flex items-center px-5 gap-4">
+    <button @click="sidebarOpen = !sidebarOpen" class="md:hidden p-2 -ml-2 rounded-md hover-surface focus-ring" aria-label="Toggle menu">
+      <svg class="w-5 h-5 text-fg-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+    </button>
     <a href="/" class="flex items-center gap-2 focus-ring rounded">
       <div class="w-7 h-7 rounded-md bg-li-blue flex items-center justify-center text-white font-bold text-[15px]">in</div>
       <span class="text-sm font-semibold text-fg-primary">linkedin-mcp-pro</span>
@@ -213,7 +220,7 @@
   </header>
 
   <!-- Sidebar -->
-  <aside class="fixed top-14 left-0 bottom-0 w-[240px] bg-[var(--surface-card)] hairline-r z-30 flex flex-col">
+  <aside x-show="sidebarOpen" x-transition.opacity class="fixed top-14 left-0 bottom-0 w-[240px] bg-[var(--surface-card)] hairline-r z-30 flex flex-col md:translate-x-0" :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'">
     <div class="flex-1 overflow-y-auto p-3 pb-32">
     <div class="text-[10px] font-semibold uppercase tracking-wider text-fg-tertiary px-2 pt-2 pb-1">Workspace</div>
     <nav class="flex flex-col gap-0.5">
@@ -295,7 +302,7 @@
   </aside>
 
   <!-- Content area (each page provides this) -->
-  <main class="ml-[240px] pt-14 min-h-screen">
+  <main class="pt-14 min-h-screen md:ml-[240px]">
     <!--__PAGE_CONTENT__-->
   </main>
 </div>

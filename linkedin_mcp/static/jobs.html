@@ -5,15 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jobs · linkedin-mcp-pro</title>
   {% include "_shell.html" %}
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    // Jobs-specific Tailwind config (extends shell defaults)
-    // Merged via Object.assign so shell's darkMode + base colors remain.
-    (function () {
-      const base = window.tailwind && window.tailwind.config;
-      // shell already sets config; we extend via runtime config script
-    })();
-  </script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <style>
@@ -30,18 +21,11 @@
     /* progress ring */
     .score-ring { transition: stroke-dashoffset 0.5s ease; }
   </style>
-  <script>
-    (function() {
-      const saved = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
-    })();
-  </script>
 </head>
 <body x-data="jobsPanel()" x-init="init()" class="text-li-text dark:text-gray-100 min-h-screen">
 
 <!-- ==================== MAIN WRAPPER (shell provides top nav + sidebar) ==================== -->
-<main class="ml-[240px] pt-14 min-h-screen">
+<main class="pt-14 min-h-screen md:ml-[240px]">
 <div class="max-w-7xl mx-auto px-6 py-6">
 
   <!-- HEADER -->

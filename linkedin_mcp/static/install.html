@@ -6,8 +6,8 @@
   <title>Install & Agents · linkedin-mcp-pro</title>
   {% include "_shell.html" %}
 </head>
-<body>
-<main class="ml-[240px] pt-14 min-h-screen">
+<body x-data="installPanel()" x-init="init()">
+<main class="pt-14 min-h-screen md:ml-[240px]">
     <div class="max-w-6xl mx-auto px-6 py-8">
 
 
@@ -89,12 +89,21 @@ function installPanel() {
     agents: [],
     async init() {
       try {
-        const r1 = await fetch('/api/install/doctor'); if (r1.ok) Object.assign(this.checks, await r1.ok ? (await r1.json()).checks || {} : {});
-      } catch (e) {}
+        const r1 = await fetch('/api/install/doctor');
+        if (r1.ok) {
+          const d = await r1.json();
+          if (d.checks) Object.assign(this.checks, d.checks);
+        }
+      } catch (e) { console.warn('doctor load failed', e); }
       try {
-        const r2 = await fetch('/api/install/agents'); if (r2.ok) this.agents = await r2.json();
-        else this.agents = this._seed();
-      } catch (e) { this.agents = this._seed(); }
+        const r2 = await fetch('/api/install/agents');
+        if (r2.ok) {
+          const d2 = await r2.json();
+          this.agents = Array.isArray(d2) ? d2 : (d2.agents || this._seed());
+        } else {
+          this.agents = this._seed();
+        }
+      } catch (e) { console.warn('agents load failed', e); this.agents = this._seed(); }
     },
     _seed() {
       return [
