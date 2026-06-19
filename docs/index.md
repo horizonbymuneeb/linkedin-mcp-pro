@@ -3,7 +3,7 @@
 > **LinkedIn automation for AI agents — 54 MCP tools, ban-safety gates, full web dashboard, MIT licensed.**
 
 [![Tests](https://img.shields.io/badge/tests-721%2F721-10b981)](https://github.com/horizonbymuneeb/linkedin-mcp-pro)
-[![Version](https://img.shields.io/badge/version-2.3.1-5e6ad2)](https://github.com/horizonbymuneeb/linkedin-mcp-pro/releases)
+[![Version](https://img.shields.io/badge/version-2.3.9-5e6ad2)](https://github.com/horizonbymuneeb/linkedin-mcp-pro/releases)
 [![Python](https://img.shields.io/badge/python-3.11%2B-3776ab)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
 [![Docs](https://img.shields.io/badge/docs-live-0a66c2)](https://horizonbymuneeb.github.io/linkedin-mcp-pro/)
@@ -47,7 +47,7 @@ It ships with a unified **web dashboard** (15 pages, Linear + LinkedIn design sy
 === "pipx (recommended)"
 
     ```bash
-    pipx install git+https://github.com/horizonbymuneeb/linkedin-mcp-pro.git@v2.3.1
+    pipx install git+https://github.com/horizonbymuneeb/linkedin-mcp-pro.git@v2.3.9
     linkedin-mcp-web --host 0.0.0.0 --port 8080
     ```
     Open <http://localhost:8080>
@@ -55,7 +55,7 @@ It ships with a unified **web dashboard** (15 pages, Linear + LinkedIn design sy
 === "pip"
 
     ```bash
-    pip install --user git+https://github.com/horizonbymuneeb/linkedin-mcp-pro.git@v2.3.1
+    pip install --user git+https://github.com/horizonbymuneeb/linkedin-mcp-pro.git@v2.3.9
     linkedin-mcp-web
     ```
 
