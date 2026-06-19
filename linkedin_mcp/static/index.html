@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>linkedin-mcp-pro · Cockpit</title>
+  <title>linkedin-mcp-pro</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
@@ -11,47 +14,92 @@
       theme: {
         extend: {
           colors: {
+            // Surfaces
+            'surface': {
+              page: '#fafafa',
+              DEFAULT: '#ffffff',
+              subtle: '#f5f5f5',
+              hover: '#fafafa',
+            },
+            // Borders
+            'border': {
+              DEFAULT: '#ebebeb',
+              strong: '#e0e0e0',
+              subtle: '#f0f0f0',
+            },
+            // Text
+            'fg': {
+              primary: '#171717',
+              secondary: '#525252',
+              tertiary: '#8a8a8a',
+              disabled: '#b3b3b3',
+            },
+            // Accent — Linear-inspired, professional purple
+            'accent': {
+              DEFAULT: '#5e6ad2',
+              hover: '#4f5bc4',
+              subtle: '#eef0fb',
+              border: '#d8dcf3',
+            },
+            // LinkedIn brand (for icon only)
             'li-blue': '#0a66c2',
             'li-blue-dark': '#004182',
-            'li-blue-light': '#e8f0fe',
-            'li-blue-50': '#f3f6fa',
+            // Status
+            'success': { DEFAULT: '#4cb782', bg: '#e6f6ec' },
+            'warning': { DEFAULT: '#c79100', bg: '#fef7e0' },
+            'danger':  { DEFAULT: '#eb5757', bg: '#fde8e8' },
           },
-          fontFamily: { sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'] },
-          animation: {
-            'fade-in': 'fadeIn 0.4s ease-out',
-            'slide-up': 'slideUp 0.5s ease-out',
-            'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
-            'shimmer': 'shimmer 2s linear infinite',
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
           },
-          keyframes: {
-            fadeIn: { '0%': { opacity: 0, transform: 'translateY(8px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
-            slideUp: { '0%': { transform: 'translateY(12px)', opacity: 0 }, '100%': { transform: 'translateY(0)', opacity: 1 } },
-            pulseSoft: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.6 } },
-            shimmer: { '0%': { backgroundPosition: '-200% 0' }, '100%': { backgroundPosition: '200% 0' } },
+          fontSize: {
+            'xs': ['12px', { lineHeight: '16px' }],
+            'sm': ['13px', { lineHeight: '18px' }],
+            'base': ['14px', { lineHeight: '20px' }],
+            'md': ['16px', { lineHeight: '24px' }],
+            'lg': ['20px', { lineHeight: '28px' }],
+            'xl': ['24px', { lineHeight: '32px' }],
+            '2xl': ['32px', { lineHeight: '40px' }],
           },
-          backgroundImage: {
-            'grid-pattern': "url(\"data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3e%3cpath d='M 60 0 L 0 0 0 60' fill='none' stroke='rgb(0,0,0)' stroke-opacity='0.04'/%3e%3c/svg%3e\")",
+          borderRadius: {
+            'sm': '4px',
+            'md': '6px',
+            'lg': '8px',
+            'xl': '10px',
+          },
+          transitionDuration: {
+            DEFAULT: '150ms',
           },
         },
       },
     }
   </script>
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <style>[x-cloak] { display: none !important; } body { font-family: 'Inter', system-ui, sans-serif; }
-    .glass { backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
-    .card-hover { transition: all 0.2s ease; }
-    .card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 30px -5px rgba(10, 102, 194, 0.15); }
-    .dark .card-hover:hover { box-shadow: 0 10px 30px -5px rgba(10, 102, 194, 0.3); }
-    .action-card { position: relative; overflow: hidden; }
-    .action-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #0a66c2, #378fe9); transform: scaleX(0); transform-origin: left; transition: transform 0.3s ease; }
-    .action-card:hover::before { transform: scaleX(1); }
-    .stat-tile { position: relative; overflow: hidden; }
-    .stat-tile::after { content: ''; position: absolute; right: -20px; top: -20px; width: 80px; height: 80px; background: radial-gradient(circle, rgba(10, 102, 194, 0.08) 0%, transparent 70%); border-radius: 50%; }
-    .live-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); animation: pulseSoft 2s infinite, pulseRing 2s infinite; }
-    @keyframes pulseRing { 0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); } 70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); } 100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); } }
-    .gradient-text { background: linear-gradient(135deg, #0a66c2 0%, #378fe9 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+  <style>
+    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: 'cv11', 'ss01'; }
+    [x-cloak] { display: none !important; }
+    .tabular { font-variant-numeric: tabular-nums; }
+    .hairline { border: 1px solid #ebebeb; }
+    .hairline-b { border-bottom: 1px solid #ebebeb; }
+    .hairline-t { border-top: 1px solid #ebebeb; }
+    .hairline-r { border-right: 1px solid #ebebeb; }
+    .focus-ring:focus-visible { outline: 2px solid #5e6ad2; outline-offset: 2px; }
+    /* Subtle status dot */
+    .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
+    /* Pill */
+    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; line-height: 16px; }
+    .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+    /* Smooth transitions */
+    * { transition-property: background-color, border-color, color, opacity; transition-duration: 150ms; }
+    /* Skeleton */
+    .skeleton { background: linear-gradient(90deg, #f0f0f0 0%, #f5f5f5 50%, #f0f0f0 100%); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; }
+    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+    .dark .skeleton { background: linear-gradient(90deg, #1f1f1f 0%, #262626 50%, #1f1f1f 100%); background-size: 200% 100%; }
+    /* Scrollbar — minimal */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; border: 2px solid transparent; background-clip: padding-box; }
   </style>
   <script>
     (function() {
@@ -63,299 +111,248 @@
     })();
   </script>
 </head>
-<body x-data="cockpit" x-init="init()" class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen bg-grid-pattern dark:bg-grid-pattern">
+<body x-data="cockpit" class="bg-surface-page text-fg-primary min-h-screen">
 
-<!-- ========== TOP STATUS STRIP ========== -->
-<header class="sticky top-0 z-50 glass bg-white/80 dark:bg-gray-900/80 border-b border-gray-200 dark:border-gray-800">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-14">
-      <a href="/" class="flex items-center gap-2.5 group">
-        <div class="w-8 h-8 bg-gradient-to-br from-li-blue to-li-blue-dark rounded-lg flex items-center justify-center shadow-sm group-hover:shadow-md transition">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+<!-- TOP NAV — 50px, hairline border, no shadow -->
+<header class="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur hairline-b">
+  <div class="max-w-6xl mx-auto px-6">
+    <div class="flex items-center justify-between h-12">
+      <!-- Brand -->
+      <a href="/" class="flex items-center gap-2 group focus-ring rounded">
+        <div class="w-5 h-5 bg-li-blue rounded flex items-center justify-center">
+          <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
         </div>
-        <div class="flex flex-col leading-none">
-          <span class="text-sm font-bold tracking-tight">linkedin-mcp-pro</span>
-          <span class="text-[10px] text-gray-500 dark:text-gray-400 font-mono" x-text="'v' + (version || '…')"></span>
-        </div>
+        <span class="text-sm font-semibold tracking-tight">linkedin-mcp-pro</span>
+        <span class="text-xs text-fg-tertiary font-mono tabular" x-text="'v' + (version || '…')"></span>
       </a>
-      <!-- System status pill -->
-      <div class="hidden md:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gray-100 dark:bg-gray-800 text-xs">
-        <span class="live-dot" x-show="!loading"></span>
-        <span class="font-medium" :class="systemStatus === 'healthy' ? 'text-emerald-600 dark:text-emerald-400' : systemStatus === 'degraded' ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'" x-text="systemStatusLabel"></span>
-        <span class="text-gray-400">·</span>
-        <span class="text-gray-600 dark:text-gray-400" x-text="systemStatusDetail"></span>
+
+      <!-- Center: command palette hint -->
+      <div class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md hairline text-xs text-fg-tertiary">
+        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+        <span>Quick search</span>
+        <kbd class="ml-2 px-1.5 py-0.5 rounded bg-surface-subtle text-[10px] font-mono">⌘K</kbd>
       </div>
+
+      <!-- Right -->
       <div class="flex items-center gap-1">
-        <button @click="toggleDark()" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition" title="Toggle theme">
+        <button @click="toggleDark()" class="p-1.5 rounded-md hover:bg-surface-subtle focus-ring" :title="dark ? 'Light mode' : 'Dark mode'">
           <svg x-show="!dark" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
           <svg x-show="dark" x-cloak class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
         </button>
-        <a href="/static/install.html" class="hidden sm:inline-flex p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition" title="Install & agents">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        <a href="/static/settings.html" class="p-1.5 rounded-md hover:bg-surface-subtle focus-ring" title="Settings">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
         </a>
-        <a href="/static/settings.html" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition" title="Settings">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </a>
+        <div class="w-px h-4 bg-border mx-1"></div>
+        <div class="w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center text-xs font-semibold" title="Muneeb Anjum">M</div>
       </div>
     </div>
   </div>
 </header>
 
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6 animate-fade-in">
+<main class="max-w-6xl mx-auto px-6 py-10">
 
-  <!-- ========== 2. GREETING + PULSE HERO ========== -->
-  <section class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-li-blue via-li-blue-dark to-[#002b5c] text-white shadow-lg">
-    <div class="absolute inset-0 opacity-20" style="background-image: radial-gradient(circle at 20% 20%, white 0%, transparent 40%), radial-gradient(circle at 80% 80%, #378fe9 0%, transparent 50%);"></div>
-    <div class="absolute right-6 top-1/2 -translate-y-1/2 text-9xl font-black opacity-[0.06] select-none pointer-events-none">in</div>
-    <div class="relative p-6 lg:p-8">
-      <div class="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
-        <div>
-          <p class="text-blue-100 text-sm font-medium mb-1" x-text="greeting"></p>
-          <h1 class="text-2xl lg:text-3xl font-bold mb-2">Your LinkedIn cockpit</h1>
-          <p class="text-blue-100 text-sm max-w-xl" x-text="pulseSubtitle"></p>
-        </div>
-        <div class="flex flex-wrap items-center gap-2">
-          <template x-for="(item, i) in pulseChips" :key="i">
-            <div class="px-3 py-1.5 bg-white/15 hover:bg-white/25 backdrop-blur rounded-lg text-sm font-medium transition" x-text="item"></div>
-          </template>
-        </div>
-      </div>
+  <!-- ========== GREETING + META ========== -->
+  <section class="mb-8">
+    <h1 class="text-xl font-semibold tracking-tight mb-1" x-text="greeting"></h1>
+    <p class="text-sm text-fg-secondary" x-text="metaLine"></p>
+  </section>
+
+  <!-- ========== KPI TILES (4 across, no icons, big numbers) ========== -->
+  <section class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border hairline rounded-lg overflow-hidden mb-8">
+    <div class="bg-white dark:bg-gray-900 p-5">
+      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Posts</div>
+      <div class="text-2xl font-semibold tabular" x-text="(summary && summary.total_posts != null) ? summary.total_posts : '—'">—</div>
+      <div class="text-xs mt-2" :class="trendClass('posts')" x-text="trendLabel('posts')">—</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 p-5">
+      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Engagements</div>
+      <div class="text-2xl font-semibold tabular" x-text="(summary && summary.data_points != null) ? summary.data_points : '—'">—</div>
+      <div class="text-xs mt-2" :class="trendClass('engagements')" x-text="trendLabel('engagements')">—</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 p-5">
+      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Success rate</div>
+      <div class="text-2xl font-semibold tabular" x-text="summary ? (summary.success_rate_pct + '%') : '—'">—</div>
+      <div class="text-xs mt-2" :class="trendClass('success')" x-text="trendLabel('success')">—</div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 p-5">
+      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Avg length</div>
+      <div class="text-2xl font-semibold tabular" x-text="(summary && summary.avg_post_length != null) ? summary.avg_post_length : '—'">—</div>
+      <div class="text-xs mt-2 text-fg-tertiary">characters</div>
     </div>
   </section>
 
-  <!-- ========== 3. PRIMARY ACTION CARDS (the 4 main jobs) ========== -->
-  <section>
-    <div class="flex items-baseline justify-between mb-3">
-      <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">What do you want to do?</h2>
-      <span class="text-xs text-gray-400">4 main flows</span>
-    </div>
-    <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <a href="/static/drafts.html" class="action-card card-hover bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 group">
-        <div class="w-10 h-10 bg-li-blue-50 dark:bg-li-blue/20 rounded-lg flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition">✍️</div>
-        <h3 class="font-semibold text-base mb-1">Write a post</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Draft, polish, and post. Or use a template.</p>
-        <span class="text-xs text-li-blue font-medium flex items-center gap-1">Open drafts <span class="group-hover:translate-x-1 transition">→</span></span>
+  <!-- ========== PRIMARY ACTIONS (small icon row, not big cards) ========== -->
+  <section class="mb-8">
+    <div class="flex items-center gap-2 flex-wrap">
+      <a href="/static/drafts.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-fg-primary text-white text-sm font-medium hover:bg-black focus-ring">
+        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+        New post
       </a>
-      <a href="/static/engagement.html" class="action-card card-hover bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 group">
-        <div class="w-10 h-10 bg-violet-50 dark:bg-violet-900/20 rounded-lg flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition">🤖</div>
-        <h3 class="font-semibold text-base mb-1">Auto-engage</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Auto-like, comment, connect with safety gates.</p>
-        <span class="text-xs text-violet-600 dark:text-violet-400 font-medium flex items-center gap-1">Open engagement <span class="group-hover:translate-x-1 transition">→</span></span>
+      <a href="/static/engagement.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-white dark:bg-gray-900 hairline text-sm font-medium hover:bg-surface-subtle focus-ring">
+        Engage
       </a>
-      <a href="/static/schedules.html" class="action-card card-hover bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 group">
-        <div class="w-10 h-10 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition">📅</div>
-        <h3 class="font-semibold text-base mb-1">Schedule posts</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">Cron-based recurring posts. Set it & forget it.</p>
-        <span class="text-xs text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">Open schedules <span class="group-hover:translate-x-1 transition">→</span></span>
+      <a href="/static/schedules.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-white dark:bg-gray-900 hairline text-sm font-medium hover:bg-surface-subtle focus-ring">
+        Schedule
       </a>
-      <a href="/static/analytics.html" class="action-card card-hover bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 group">
-        <div class="w-10 h-10 bg-amber-50 dark:bg-amber-900/20 rounded-lg flex items-center justify-center text-2xl mb-3 group-hover:scale-110 transition">📊</div>
-        <h3 class="font-semibold text-base mb-1">See analytics</h3>
-        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">30-day charts, engagement, success rate.</p>
-        <span class="text-xs text-amber-600 dark:text-amber-400 font-medium flex items-center gap-1">Open analytics <span class="group-hover:translate-x-1 transition">→</span></span>
+      <a href="/static/analytics.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-white dark:bg-gray-900 hairline text-sm font-medium hover:bg-surface-subtle focus-ring">
+        Analytics
+      </a>
+      <div class="w-px h-5 bg-border mx-1"></div>
+      <a href="/static/safety.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md text-sm text-fg-secondary hover:bg-surface-subtle focus-ring">
+        Safety
+      </a>
+      <a href="/static/audit.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md text-sm text-fg-secondary hover:bg-surface-subtle focus-ring">
+        Audit
       </a>
     </div>
   </section>
 
-  <!-- ========== 4. LIVE STATUS GRID (3 columns) ========== -->
-  <section class="grid lg:grid-cols-3 gap-4">
-    <!-- Today's metrics -->
-    <div class="stat-tile card-hover bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Today</h3>
-        <span class="live-dot"></span>
-      </div>
-      <div class="grid grid-cols-2 gap-3">
-        <div>
-          <div class="text-2xl font-bold" x-text="(summary && summary.total_posts) ?? '–'"></div>
-          <div class="text-[10px] text-gray-500 uppercase tracking-wide">Posts</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold" x-text="summary ? (summary.success_rate_pct + '%') : '–'"></div>
-          <div class="text-[10px] text-gray-500 uppercase tracking-wide">Success</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold" x-text="(summary && summary.avg_post_length) || '–'"></div>
-          <div class="text-[10px] text-gray-500 uppercase tracking-wide">Avg chars</div>
-        </div>
-        <div>
-          <div class="text-2xl font-bold" x-text="(summary && summary.data_points) || '–'"></div>
-          <div class="text-[10px] text-gray-500 uppercase tracking-wide">Data pts</div>
-        </div>
-      </div>
-    </div>
+  <!-- ========== TWO-COLUMN: Activity (wide) + Status (narrow) ========== -->
+  <section class="grid lg:grid-cols-3 gap-6">
 
-    <!-- Next scheduled -->
-    <div class="stat-tile card-hover bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Next scheduled</h3>
-        <span class="text-lg">📅</span>
+    <!-- Activity (2/3) -->
+    <div class="lg:col-span-2 bg-white dark:bg-gray-900 hairline rounded-lg overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3 hairline-b">
+        <h2 class="text-sm font-semibold">Activity</h2>
+        <a href="/static/audit.html" class="text-xs text-fg-secondary hover:text-fg-primary">View all</a>
       </div>
-      <template x-if="nextSchedule">
-        <div>
-          <div class="text-base font-semibold mb-1" x-text="nextSchedule.name"></div>
-          <div class="text-xs text-gray-500 dark:text-gray-400 font-mono mb-2" x-text="nextSchedule.cron || nextSchedule.at"></div>
-          <div class="text-[11px] text-li-blue font-medium" x-text="nextSchedule.when"></div>
-        </div>
-      </template>
-      <template x-if="!nextSchedule">
-        <div>
-          <p class="text-sm text-gray-500 dark:text-gray-400">No upcoming posts.</p>
-          <a href="/static/schedules.html" class="text-xs text-li-blue hover:underline mt-2 inline-block">+ Create schedule</a>
-        </div>
-      </template>
-    </div>
 
-    <!-- System health -->
-    <div class="stat-tile card-hover bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-      <div class="flex items-center justify-between mb-3">
-        <h3 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">System</h3>
-        <span class="text-lg">🛡️</span>
-      </div>
-      <div class="space-y-2.5">
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600 dark:text-gray-400">Cookie</span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full" :class="health.cookie ? 'bg-emerald-500' : 'bg-rose-500'"></span>
-            <span class="text-xs font-medium" x-text="health.cookie ? 'valid' : 'missing'"></span>
-          </span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600 dark:text-gray-400">LLM keys</span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full" :class="health.llm > 0 ? 'bg-emerald-500' : 'bg-amber-500'"></span>
-            <span class="text-xs font-medium" x-text="health.llm + ' configured'"></span>
-          </span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600 dark:text-gray-400">Schedules</span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full" :class="health.schedules > 0 ? 'bg-emerald-500' : 'bg-gray-400'"></span>
-            <span class="text-xs font-medium" x-text="health.schedules + ' active'"></span>
-          </span>
-        </div>
-        <div class="flex items-center justify-between text-sm">
-          <span class="text-gray-600 dark:text-gray-400">Dead-man</span>
-          <span class="flex items-center gap-1.5">
-            <span class="w-1.5 h-1.5 rounded-full" :class="health.deadman === 'ok' ? 'bg-emerald-500' : health.deadman === 'warning' ? 'bg-amber-500' : 'bg-gray-400'"></span>
-            <span class="text-xs font-medium uppercase" x-text="health.deadman || '–'"></span>
-          </span>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========== 5. ACTIVITY FEED + RECENT DRAFTS (2 columns) ========== -->
-  <section class="grid lg:grid-cols-3 gap-4">
-    <!-- Activity feed (2/3 width) -->
-    <div class="lg:col-span-2 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-      <div class="flex items-center justify-between mb-4">
-        <div>
-          <h3 class="text-base font-semibold">Recent activity</h3>
-          <p class="text-xs text-gray-500 dark:text-gray-400">Last 20 actions, live</p>
-        </div>
-        <a href="/static/audit.html" class="text-xs text-li-blue hover:underline">Full audit log →</a>
-      </div>
-      <template x-if="activity.length === 0">
-        <div class="text-center py-12 text-sm text-gray-400">
-          <div class="text-3xl mb-2">📭</div>
-          <p>No activity yet. Your actions will appear here.</p>
-        </div>
-      </template>
-      <template x-if="activity.length > 0">
-        <ul class="space-y-1.5 max-h-96 overflow-y-auto">
-          <template x-for="(a, i) in activity" :key="i">
-            <li class="flex items-start gap-3 py-2 px-2 -mx-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800/50 transition text-sm">
-              <span class="text-base flex-shrink-0 mt-0.5" x-text="actionIcon(a.action)"></span>
-              <div class="flex-1 min-w-0">
-                <div class="font-medium truncate" x-text="a.action + ' ' + (a.target || '')"></div>
-                <div class="text-xs text-gray-500 dark:text-gray-400" x-text="relTime(a.ts)"></div>
+      <template x-if="loading">
+        <ul class="divide-y divide-border-subtle">
+          <template x-for="i in 5" :key="i">
+            <li class="px-5 py-3 flex items-center gap-3">
+              <div class="w-4 h-4 rounded skeleton"></div>
+              <div class="flex-1 space-y-1.5">
+                <div class="h-3 w-2/3 rounded skeleton"></div>
+                <div class="h-2.5 w-1/3 rounded skeleton"></div>
               </div>
-              <span class="text-[10px] font-mono uppercase px-1.5 py-0.5 rounded flex-shrink-0"
-                :class="a.status === 'success' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300' : a.status === 'dry_run' ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300' : 'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300'"
-                x-text="a.status"></span>
+              <div class="h-4 w-12 rounded skeleton"></div>
+            </li>
+          </template>
+        </ul>
+      </template>
+
+      <template x-if="!loading && activity.length === 0">
+        <div class="px-5 py-16 flex flex-col items-center text-center">
+          <svg class="w-10 h-10 text-fg-tertiary mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+          <h3 class="text-sm font-semibold mb-1">No activity yet</h3>
+          <p class="text-xs text-fg-secondary max-w-xs mb-4">When you draft, schedule, or auto-engage, the actions show up here.</p>
+          <a href="/static/drafts.html" class="inline-flex items-center gap-1.5 px-3 h-8 rounded-md bg-fg-primary text-white text-xs font-medium hover:bg-black">Write your first post</a>
+        </div>
+      </template>
+
+      <template x-if="!loading && activity.length > 0">
+        <ul class="divide-y divide-border-subtle">
+          <template x-for="(a, i) in activity" :key="i">
+            <li class="px-5 py-3 flex items-center gap-3 hover:bg-surface-hover">
+              <span class="dot" :style="`background: ${statusColor(a.status)}`"></span>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm font-medium truncate" x-text="a.action + ' ' + (a.target || '')"></div>
+                <div class="text-xs text-fg-tertiary" x-text="relTime(a.ts)"></div>
+              </div>
+              <span class="pill" :style="`background: ${statusBg(a.status)}; color: ${statusFg(a.status)}`" x-text="a.status"></span>
             </li>
           </template>
         </ul>
       </template>
     </div>
 
-    <!-- Recent drafts (1/3 width) -->
-    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-base font-semibold">Recent drafts</h3>
-        <a href="/static/drafts.html" class="text-xs text-li-blue hover:underline">All →</a>
-      </div>
-      <template x-if="recentDrafts.length === 0">
-        <div class="text-center py-8 text-sm text-gray-400">
-          <div class="text-3xl mb-2">📝</div>
-          <p class="mb-3">No drafts yet</p>
-          <a href="/static/drafts.html" class="inline-flex px-3 py-1.5 bg-li-blue text-white text-xs font-medium rounded-md hover:bg-li-blue-dark transition">+ Create first draft</a>
+    <!-- Status (1/3) -->
+    <div class="space-y-6">
+      <!-- System health -->
+      <div class="bg-white dark:bg-gray-900 hairline rounded-lg">
+        <div class="px-5 py-3 hairline-b">
+          <h2 class="text-sm font-semibold">System</h2>
         </div>
-      </template>
-      <template x-if="recentDrafts.length > 0">
-        <ul class="space-y-2">
-          <template x-for="d in recentDrafts" :key="d.id">
-            <li class="p-3 rounded-md border border-gray-200 dark:border-gray-800 hover:border-li-blue/50 transition cursor-pointer">
-              <div class="text-sm font-medium truncate" x-text="d.topic || 'Untitled'"></div>
-              <div class="text-xs text-gray-500 dark:text-gray-400 mt-1" x-text="d.preview || ''"></div>
-              <div class="text-[10px] text-gray-400 mt-1" x-text="relTime(d.ts)"></div>
-            </li>
-          </template>
+        <ul class="divide-y divide-border-subtle">
+          <li class="px-5 py-3 flex items-center justify-between">
+            <span class="text-sm text-fg-secondary">Cookie</span>
+            <span class="pill" :style="health.cookie ? 'background:#e6f6ec;color:#4cb782' : 'background:#fde8e8;color:#eb5757'" x-text="health.cookie ? 'Valid' : 'Missing'"></span>
+          </li>
+          <li class="px-5 py-3 flex items-center justify-between">
+            <span class="text-sm text-fg-secondary">LLM keys</span>
+            <span class="text-sm font-medium tabular" x-text="health.llm + ' configured'"></span>
+          </li>
+          <li class="px-5 py-3 flex items-center justify-between">
+            <span class="text-sm text-fg-secondary">Schedules</span>
+            <span class="text-sm font-medium tabular" x-text="health.schedules + ' active'"></span>
+          </li>
+          <li class="px-5 py-3 flex items-center justify-between">
+            <span class="text-sm text-fg-secondary">Dead-man</span>
+            <span class="pill" :style="deadmanStyle" x-text="health.deadman || '—'"></span>
+          </li>
         </ul>
-      </template>
-    </div>
-  </section>
+      </div>
 
-  <!-- ========== 6. ONBOARDING (only if setup incomplete) ========== -->
-  <section x-show="needsSetup" x-cloak class="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200 dark:border-amber-800/50 rounded-xl p-5">
-    <div class="flex items-start gap-4">
-      <div class="text-3xl flex-shrink-0">⚡</div>
-      <div class="flex-1">
-        <h3 class="text-base font-semibold mb-1">Get started in 3 steps</h3>
-        <p class="text-sm text-gray-600 dark:text-gray-400 mb-4">linkedin-mcp-pro is installed but not fully wired up yet.</p>
-        <div class="grid sm:grid-cols-3 gap-3">
-          <a href="/static/cookies.html" class="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border border-amber-200 dark:border-amber-800/50 hover:border-amber-400 transition">
-            <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">1</span>
+      <!-- Next scheduled -->
+      <div class="bg-white dark:bg-gray-900 hairline rounded-lg">
+        <div class="px-5 py-3 hairline-b flex items-center justify-between">
+          <h2 class="text-sm font-semibold">Next scheduled</h2>
+          <a href="/static/schedules.html" class="text-xs text-fg-secondary hover:text-fg-primary">Manage</a>
+        </div>
+        <div class="px-5 py-4">
+          <template x-if="nextSchedule">
             <div>
-              <div class="text-sm font-medium">Add LinkedIn cookie</div>
-              <div class="text-xs text-gray-500">Connect your account</div>
+              <div class="text-sm font-medium mb-1" x-text="nextSchedule.name"></div>
+              <div class="text-xs text-fg-tertiary font-mono" x-text="nextSchedule.cron || nextSchedule.at"></div>
+              <div class="text-xs text-accent mt-2" x-text="nextSchedule.when"></div>
             </div>
-          </a>
-          <a href="/static/llm.html" class="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border border-amber-200 dark:border-amber-800/50 hover:border-amber-400 transition">
-            <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">2</span>
-            <div>
-              <div class="text-sm font-medium">Add LLM API key</div>
-              <div class="text-xs text-gray-500">For post drafting</div>
+          </template>
+          <template x-if="!nextSchedule">
+            <div class="text-center py-4">
+              <p class="text-xs text-fg-tertiary mb-3">No upcoming posts.</p>
+              <a href="/static/schedules.html" class="inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-white dark:bg-gray-900 hairline text-xs font-medium hover:bg-surface-subtle">+ Create schedule</a>
             </div>
-          </a>
-          <a href="/static/install.html" class="flex items-start gap-2 p-3 bg-white dark:bg-gray-900 rounded-lg border border-amber-200 dark:border-amber-800/50 hover:border-amber-400 transition">
-            <span class="text-xs font-mono px-1.5 py-0.5 rounded bg-amber-200 dark:bg-amber-800 text-amber-900 dark:text-amber-100">3</span>
-            <div>
-              <div class="text-sm font-medium">Install to AI agent</div>
-              <div class="text-xs text-gray-500">Claude / Cursor / etc.</div>
-            </div>
-          </a>
+          </template>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ========== 7. FOOTER (subtle) ========== -->
-  <footer class="pt-4 pb-8 border-t border-gray-200 dark:border-gray-800">
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-gray-500 dark:text-gray-400">
-      <div class="flex items-center gap-3">
-        <a href="https://github.com/horizonbymuneeb/linkedin-mcp-pro" class="hover:text-li-blue transition">GitHub</a>
-        <span>·</span>
-        <a href="/static/safety.html" class="hover:text-li-blue transition">Safety</a>
-        <span>·</span>
-        <a href="/static/audit.html" class="hover:text-li-blue transition">Audit</a>
-        <span>·</span>
-        <a href="/static/install.html" class="hover:text-li-blue transition">Install</a>
+  <!-- ========== ONBOARDING (only if setup incomplete) ========== -->
+  <section x-show="needsSetup" x-cloak class="mt-8 bg-white dark:bg-gray-900 hairline rounded-lg">
+    <div class="px-5 py-4 flex items-center justify-between hairline-b">
+      <div class="flex items-center gap-2">
+        <span class="dot" style="background: #c79100"></span>
+        <h2 class="text-sm font-semibold">Setup incomplete</h2>
       </div>
-      <div>
-        MIT · <span x-text="'v' + (version || '…')"></span> · linkedin-mcp-pro
+      <a href="/static/install.html" class="text-xs text-fg-secondary hover:text-fg-primary">All settings</a>
+    </div>
+    <div class="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle">
+      <a href="/static/cookies.html" class="px-5 py-4 flex items-start gap-3 hover:bg-surface-hover">
+        <div class="w-7 h-7 rounded-md bg-surface-subtle flex items-center justify-center text-sm font-semibold tabular text-fg-tertiary">1</div>
+        <div>
+          <div class="text-sm font-medium mb-0.5">Connect LinkedIn</div>
+          <div class="text-xs text-fg-tertiary">Add a session cookie</div>
+        </div>
+      </a>
+      <a href="/static/llm.html" class="px-5 py-4 flex items-start gap-3 hover:bg-surface-hover">
+        <div class="w-7 h-7 rounded-md bg-surface-subtle flex items-center justify-center text-sm font-semibold tabular text-fg-tertiary">2</div>
+        <div>
+          <div class="text-sm font-medium mb-0.5">Add LLM key</div>
+          <div class="text-xs text-fg-tertiary">For post drafting</div>
+        </div>
+      </a>
+      <a href="/static/install.html" class="px-5 py-4 flex items-start gap-3 hover:bg-surface-hover">
+        <div class="w-7 h-7 rounded-md bg-surface-subtle flex items-center justify-center text-sm font-semibold tabular text-fg-tertiary">3</div>
+        <div>
+          <div class="text-sm font-medium mb-0.5">Install to agent</div>
+          <div class="text-xs text-fg-tertiary">Claude / Cursor / etc.</div>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="mt-12 pt-6 hairline-t">
+    <div class="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-fg-tertiary">
+      <div class="flex items-center gap-4">
+        <a href="https://github.com/horizonbymuneeb/linkedin-mcp-pro" class="hover:text-fg-primary">GitHub</a>
+        <a href="/static/safety.html" class="hover:text-fg-primary">Safety</a>
+        <a href="/static/audit.html" class="hover:text-fg-primary">Audit</a>
+        <a href="/static/install.html" class="hover:text-fg-primary">Install</a>
       </div>
+      <div>MIT · <span x-text="'v' + (version || '…')"></span> · linkedin-mcp-pro</div>
     </div>
   </footer>
 </main>
@@ -363,11 +360,6 @@
 <script>
 async function jget(url) {
   const r = await fetch(url);
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-async function jpost(url, body) {
-  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
   if (!r.ok) throw new Error(await r.text());
   return r.json();
 }
@@ -382,16 +374,22 @@ function relTime(iso) {
   return Math.floor(diff/86400) + 'd ago';
 }
 
-function actionIcon(a) {
-  const map = {post: '📤', like: '❤️', comment: '💬', connect: '🤝', draft: '✍️', schedule: '📅', login: '🔐'};
-  return map[a] || '⚡';
-}
+const STATUS_COLORS = {
+  success: { bg: '#e6f6ec', fg: '#4cb782', dot: '#4cb782' },
+  dry_run: { bg: '#eef0fb', fg: '#5e6ad2', dot: '#5e6ad2' },
+  failure: { bg: '#fde8e8', fg: '#eb5757', dot: '#eb5757' },
+  pending: { bg: '#f5f5f5', fg: '#8a8a8a', dot: '#8a8a8a' },
+};
+
+function statusBg(s) { return (STATUS_COLORS[s] || STATUS_COLORS.pending).bg; }
+function statusFg(s) { return (STATUS_COLORS[s] || STATUS_COLORS.pending).fg; }
+function statusColor(s) { return (STATUS_COLORS[s] || STATUS_COLORS.pending).dot; }
 
 function greeting() {
   const h = new Date().getHours();
-  if (h < 12) return 'Good morning';
-  if (h < 18) return 'Good afternoon';
-  return 'Good evening';
+  if (h < 12) return 'Good morning, Muneeb';
+  if (h < 18) return 'Good afternoon, Muneeb';
+  return 'Good evening, Muneeb';
 }
 
 document.addEventListener('alpine:init', () => {
@@ -402,18 +400,33 @@ document.addEventListener('alpine:init', () => {
     summary: null,
     schedules: [],
     activity: [],
-    recentDrafts: [],
     health: { cookie: false, llm: 0, schedules: 0, deadman: null },
     needsSetup: false,
-    systemStatus: 'healthy',
-    systemStatusLabel: 'Loading…',
-    systemStatusDetail: '',
-    pulseSubtitle: 'Loading your activity…',
-    pulseChips: [],
     get greeting() { return greeting(); },
+    get metaLine() {
+      if (this.health.cookie && this.health.llm > 0) {
+        return `${this.health.schedules} active schedules · ${this.health.llm} LLM providers configured`;
+      }
+      if (!this.health.cookie) return 'Connect your LinkedIn cookie to get started.';
+      return 'Add an LLM API key to enable post drafting.';
+    },
     get nextSchedule() {
       if (!this.schedules || this.schedules.length === 0) return null;
       return this.schedules[0];
+    },
+    get deadmanStyle() {
+      const s = this.health.deadman;
+      if (s === 'ok' || s === 'OK') return 'background:#e6f6ec;color:#4cb782';
+      if (s === 'warning' || s === 'alert') return 'background:#fef7e0;color:#c79100';
+      return 'background:#f5f5f5;color:#8a8a8a';
+    },
+    trendClass(metric) {
+      // mock — wire up to real data
+      return 'text-fg-tertiary';
+    },
+    trendLabel(metric) {
+      const map = { posts: 'this week', engagements: 'this week', success: 'last 30d' };
+      return map[metric] || '';
     },
     toggleDark() {
       this.dark = !this.dark;
@@ -422,56 +435,24 @@ document.addEventListener('alpine:init', () => {
     },
     async init() {
       try {
-        // Parallel load
         const [v, summary, deadman, schedules, llm] = await Promise.allSettled([
           jget('/api/version'),
-          jget('/api/summary?days=1'),
+          jget('/api/summary?days=30'),
           jget('/api/deadman'),
           jget('/api/schedules'),
           jget('/api/llm/providers').catch(() => ({providers: {}})),
         ]);
         if (v.status === 'fulfilled') this.version = v.value.version;
         if (summary.status === 'fulfilled') this.summary = summary.value;
-        if (schedules.status === 'fulfilled') this.schedules = schedules.value || [];
         if (deadman.status === 'fulfilled') this.health.deadman = deadman.value.status;
+        if (schedules.status === 'fulfilled') this.schedules = schedules.value || [];
         if (llm.status === 'fulfilled') {
           const p = llm.value.providers || {};
           this.health.llm = Object.values(p).filter(x => x.is_configured).length;
         }
         this.health.cookie = await this.checkCookie();
         this.health.schedules = this.schedules.filter(s => s.enabled).length;
-
-        // System status
-        if (this.health.cookie && this.health.llm > 0) {
-          this.systemStatus = 'healthy';
-          this.systemStatusLabel = 'All systems normal';
-          this.systemStatusDetail = this.health.schedules + ' schedules';
-        } else if (this.health.cookie) {
-          this.systemStatus = 'degraded';
-          this.systemStatusLabel = 'LLM keys missing';
-          this.systemStatusDetail = 'Add an API key';
-        } else {
-          this.systemStatus = 'unhealthy';
-          this.systemStatusLabel = 'Cookie missing';
-          this.systemStatusDetail = 'Connect account';
-        }
-
-        // Onboarding
         this.needsSetup = !this.health.cookie || this.health.llm === 0;
-
-        // Pulse chips
-        const chips = [];
-        if (this.summary && this.summary.total_posts > 0) chips.push(this.summary.total_posts + ' posts today');
-        if (this.health.schedules > 0) chips.push(this.health.schedules + ' schedules active');
-        if (this.health.deadman === 'ok') chips.push('Dead-man OK');
-        if (chips.length === 0) chips.push('All quiet — start with "Write a post"');
-        this.pulseChips = chips;
-        this.pulseSubtitle = this.health.cookie
-          ? 'Your cockpit is connected. Pick a workflow above to get started.'
-          : 'Connect your LinkedIn account to begin. The setup wizard will guide you.';
-
-        // Activity (mock until we have an endpoint)
-        this.activity = [];
       } catch (e) { console.warn('init', e); }
       finally { this.loading = false; }
     },
