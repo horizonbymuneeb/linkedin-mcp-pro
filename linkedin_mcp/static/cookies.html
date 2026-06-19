@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Cookies & Login · linkedin-mcp-pro</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pico.css@2/css/pico.min.css">
+  <style>
+    body { max-width: 1100px; margin: 24px auto; padding: 0 16px; font: 14px/1.5 system-ui; }
+    h1 { font-size: 22px; margin-bottom: 4px; }
+    .sub { color: #888; margin-bottom: 24px; }
+    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+    .card { padding: 16px; border-radius: 10px; background: rgba(127,127,127,.08); margin-bottom: 16px; }
+    .ok { color: #2a9d3f; font-weight: 600; }
+    .warn { color: #d97706; font-weight: 600; }
+    .alert { color: #d62828; font-weight: 600; }
+    pre { background: rgba(127,127,127,.12); padding: 10px; border-radius: 6px; overflow-x: auto; font-size: 12px; max-height: 320px; }
+    table { font-size: 13px; }
+    table td { padding: 4px 8px; }
+    button { font: inherit; padding: 8px 16px; border: 0; border-radius: 6px;
+             background: #0070f3; color: white; cursor: pointer; }
+    button:hover { background: #005ac1; }
+    button.secondary { background: #888; }
+    button.danger { background: #d62828; }
+    textarea { font: 12px ui-monospace, monospace; min-height: 120px; }
+    input { font: 13px ui-monospace, monospace; }
+    .stat { display: inline-block; padding: 8px 14px; border-radius: 6px;
+            background: rgba(127,127,127,.12); margin-right: 8px; }
+    .stat strong { display: block; font-size: 18px; }
+    .stat span { font-size: 11px; color: #888; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px;
+            background: rgba(127,127,127,.15); font-size: 11px; margin-right: 4px; }
+    details { margin: 8px 0; }
+    summary { cursor: pointer; font-weight: 600; padding: 4px 0; }
+    code { background: rgba(127,127,127,.12); padding: 1px 6px; border-radius: 3px; font-size: 12px; }
+  </style>
+</head>
+<body>
+
+<a href="/" role="button" class="secondary" style="float:right">← Dashboard</a>
+<h1>🔐 Cookies & Login</h1>
+<p class="sub">Manage your LinkedIn session. 3 ways to authenticate: (1) browser login, (2) paste <code>li_at</code>, (3) import full cookie JSON.</p>
+
+<!-- ════════ HEALTH ════════ -->
+<h2>🩺 Session health</h2>
+<div class="card" id="health">checking…</div>
+
+<!-- ════════ LOGIN ACTIONS ════════ -->
+<h2>🚀 Login / Refresh</h2>
+<div class="card">
+  <div class="grid">
+    <div>
+      <strong>Option A: Browser login</strong>
+      <p class="sub">Opens Chromium on this server. Best when you have VNC/SSH-X11 access. Otherwise use Option B.</p>
+      <button id="login-headed" onclick="loginHeaded()">▶ Login (headed)</button>
+      <button class="secondary" id="login-headless" onclick="loginHeadless()">👻 Login (headless)</button>
+      <button class="danger" id="login-cancel" onclick="loginCancel()" disabled>⏹ Cancel</button>
+      <div id="login-status" style="margin-top:8px"></div>
+    </div>
+    <div>
+      <strong>Option B: Paste li_at cookie</strong>
+      <p class="sub">Open <a href="https://www.linkedin.com" target="_blank">LinkedIn</a> in your browser, press F12 → Application → Cookies → copy <code>li_at</code> value, paste below.</p>
+      <input id="li-at-input" type="password" placeholder="AQEDAS27ghk..." style="width:100%"/>
+      <button onclick="setLiAt()" style="margin-top:6px">💾 Save & Test</button>
+      <div id="li-at-status" style="margin-top:8px"></div>
+    </div>
+  </div>
+  <div style="margin-top:16px">
+    <strong>Option C: Import full cookie JSON</strong>
+    <p class="sub">Export from EditThisCookie / Cookie-Editor browser extension. Must contain <code>li_at</code>.</p>
+    <textarea id="import-input" placeholder='[{"name":"li_at","value":"AQEDAS27...","domain":".linkedin.com","path":"/","expires":-1,"httpOnly":true,"secure":true,"sameSite":"None"}]'></textarea>
+    <button onclick="importCookies()" style="margin-top:6px">📥 Import</button>
+    <div id="import-status" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- ════════ COOKIE INVENTORY ════════ -->
+<h2>🍪 Cookie inventory <span id="cookie-count" class="pill">0</span></h2>
+<div class="card" id="cookie-list">loading…</div>
+
+<details>
+  <summary>📋 Raw JSON (storage_state.json)</summary>
+  <pre id="raw-json">loading…</pre>
+</details>
+
+<!-- ════════ INSTALL / SETUP ════════ -->
+<h2>📦 Get cookies manually (no browser needed)</h2>
+<div class="card">
+  <ol>
+    <li>Open <a href="https://www.linkedin.com/feed/" target="_blank">linkedin.com/feed</a> in any browser (your laptop is fine).</li>
+    <li>Log in normally with email + password + 2FA.</li>
+    <li>Press <code>F12</code> → open <strong>Application</strong> tab → <strong>Cookies</strong> → click <code>https://www.linkedin.com</code>.</li>
+    <li>Find the <code>li_at</code> row → double-click its value → <code>Ctrl+C</code>.</li>
+    <li>Paste into "Option B" above → click "Save & Test".</li>
+  </ol>
+  <p class="sub">✅ No browser automation needed, no Playwright required, works from any country.</p>
+</div>
+
+<script>
+async function jget(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function jpost(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  const text = await r.text();
+  try { return JSON.parse(text); }
+  catch { throw new Error(text); }
+}
+
+async function loadHealth() {
+  try {
+    const h = await jget('/api/profile/health');
+    const cls = h.overall_ok ? 'ok' : 'alert';
+    document.getElementById('health').innerHTML = `
+      <span class="${cls}" style="font-size:18px">${h.overall_ok ? '✓ LOGGED IN' : '✗ NOT LOGGED IN'}</span>
+      <div style="margin-top:12px">
+        <div class="stat"><strong>${h.cookie_count}</strong><span>cookies</span></div>
+        <div class="stat"><strong>${h.storage_state_age_days}</strong><span>days old</span></div>
+        <div class="stat"><strong>${h.linkedin_http_status}</strong><span>HTTP status</span></div>
+        <div class="stat"><strong>${h.linkedin_elapsed_ms}ms</strong><span>latency</span></div>
+      </div>
+      <details style="margin-top:12px">
+        <summary>raw</summary>
+        <pre>${JSON.stringify(h, null, 2)}</pre>
+      </details>
+    `;
+  } catch (e) {
+    document.getElementById('health').innerHTML = `<span class="alert">${e.message}</span>`;
+  }
+}
+
+async function loadCookies() {
+  try {
+    const c = await jget('/api/cookies');
+    document.getElementById('cookie-count').textContent = c.count + ' cookies · ' + c.domains.length + ' domains';
+
+    // li_at file card
+    const li = c.li_at_file;
+    const st = c.storage_state;
+    const consistency = c.consistency;
+    const consCls = consistency === 'match' ? 'ok' : 'warn';
+
+    // Cookie table
+    let rows = '';
+    for (const ck of c.cookies) {
+      const auth = ck._is_auth ? '<span class="pill">⭐AUTH</span>' : '';
+      const secure = ck.secure ? '🔒' : '';
+      const httponly = ck.httpOnly ? '🚫JS' : '';
+      const exp = ck.expires && ck.expires > 0 ? new Date(ck.expires * 1000).toISOString().slice(0,10) : 'session';
+      rows += `<tr><td>${auth}${secure}${httponly}</td><td><code>${ck.name}</code></td><td><code>${ck.value_masked || ck.value}</code></td><td>${ck.domain}</td><td>${exp}</td></tr>`;
+    }
+
+    document.getElementById('cookie-list').innerHTML = `
+      <div style="margin-bottom:12px">
+        <span class="stat"><strong>${li.value_masked}</strong><span>li_at file (${li.bytes}B, mode=${li.mode})</span></span>
+        <span class="stat"><strong>${st.bytes}B</strong><span>storage_state.json</span></span>
+        <span class="stat ${consCls}"><strong>${consistency}</strong><span>consistency</span></span>
+      </div>
+      <table>
+        <thead><tr><th></th><th>name</th><th>value (masked)</th><th>domain</th><th>expires</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    `;
+    document.getElementById('raw-json').textContent = JSON.stringify(c, null, 2);
+  } catch (e) {
+    document.getElementById('cookie-list').innerHTML = `<span class="alert">${e.message}</span>`;
+  }
+}
+
+async function loginHeaded() {
+  await loginStart(false);
+}
+async function loginHeadless() {
+  await loginStart(true);
+}
+async function loginStart(headless) {
+  const status = document.getElementById('login-status');
+  status.innerHTML = '⏳ launching browser...';
+  try {
+    const r = await jpost('/api/login/start?headless=' + headless, {});
+    status.innerHTML = `<span class="ok">✓ Login process started (PID ${r.pid})</span><br><small>${r.tip}</small>`;
+    document.getElementById('login-cancel').disabled = false;
+    pollLogin();
+  } catch (e) {
+    status.innerHTML = `<span class="alert">✗ ${e.message}</span>`;
+  }
+}
+async function pollLogin() {
+  const s = await jget('/api/login/status');
+  if (!s.running) {
+    document.getElementById('login-cancel').disabled = true;
+    if (s.ok === true) {
+      document.getElementById('login-status').innerHTML += '<br><span class="ok">✓ Login completed! Reloading cookies...</span>';
+      setTimeout(() => { loadHealth(); loadCookies(); }, 1000);
+    } else if (s.error) {
+      document.getElementById('login-status').innerHTML += `<br><span class="alert">✗ ${s.error}</span>`;
+    }
+  } else {
+    setTimeout(pollLogin, 2000);
+  }
+}
+async function loginCancel() {
+  await jpost('/api/login/cancel', {});
+  document.getElementById('login-cancel').disabled = true;
+}
+
+async function setLiAt() {
+  const value = document.getElementById('li-at-input').value.trim();
+  if (!value) { alert('Paste li_at value first'); return; }
+  const status = document.getElementById('li-at-status');
+  status.innerHTML = '⏳ saving and testing...';
+  try {
+    const r = await jpost('/api/cookies/li_at', {value, note: 'set via web UI'});
+    if (r.health.is_logged_in) {
+      status.innerHTML = `<span class="ok">✓ Saved + login verified! (${r.health.elapsed_ms}ms, title: "${r.health.title}")</span>`;
+    } else {
+      status.innerHTML = `<span class="warn">⚠ Saved but login check failed: HTTP ${r.health.http_status} title="${r.health.title}"</span>`;
+    }
+    loadHealth(); loadCookies();
+  } catch (e) {
+    status.innerHTML = `<span class="alert">✗ ${e.message}</span>`;
+  }
+}
+
+async function importCookies() {
+  const txt = document.getElementById('import-input').value.trim();
+  if (!txt) { alert('Paste cookie JSON first'); return; }
+  let cookies;
+  try { cookies = JSON.parse(txt); }
+  catch (e) { alert('Invalid JSON: ' + e.message); return; }
+  const status = document.getElementById('import-status');
+  status.innerHTML = '⏳ importing...';
+  try {
+    const r = await jpost('/api/cookies/import', {cookies});
+    let extra = '';
+    if (r.health && r.health.is_logged_in) extra = `<br><span class="ok">✓ login verified</span>`;
+    else if (r.health) extra = `<br><span class="warn">⚠ saved but login check: HTTP ${r.health.http_status}</span>`;
+    status.innerHTML = `<span class="ok">✓ Imported ${r.imported} cookies (${r.storage_state_bytes}B)${r.li_at_synced ? ' + li_at synced' : ''}</span>${extra}`;
+    loadHealth(); loadCookies();
+  } catch (e) {
+    status.innerHTML = `<span class="alert">✗ ${e.message}</span>`;
+  }
+}
+
+loadHealth(); loadCookies();
+setInterval(() => { loadHealth(); loadCookies(); }, 30000);  // refresh every 30s
+</script>
+</body>
+</html>
