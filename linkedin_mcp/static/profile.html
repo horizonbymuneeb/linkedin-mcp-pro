@@ -16,12 +16,18 @@
   <div class="rounded-2xl bg-gradient-to-br from-li-blue to-li-blue-dark text-white p-8 shadow-xl mb-8 relative overflow-hidden">
     <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
     <div class="relative flex items-start gap-6">
-      <div class="w-24 h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-bold border-4 border-white/30" x-text="(profile.name || '?').split(' ').map(s => s[0]).join('').slice(0,2)"></div>
+      <div class="w-24 h-24 rounded-full bg-white/20 backdrop-blur flex items-center justify-center text-3xl font-bold border-4 border-white/30 overflow-hidden">
+        <img x-show="profile.avatar_url" :src="profile.avatar_url" alt="" class="w-full h-full object-cover" />
+        <span x-show="!profile.avatar_url" x-text="(profile.name || '?').split(' ').map(s => s[0]).join('').slice(0,2)"></span>
+      </div>
       <div class="flex-1">
         <h1 class="text-3xl font-bold mb-1" x-text="profile.name"></h1>
-        <p class="text-blue-100 mb-1" x-text="profile.headline"></p>
-        <p class="text-blue-200 text-sm" x-text="profile.location"></p>
+        <p class="text-blue-100 mb-1" x-text="profile.headline || '— no headline set —'"></p>
+        <p class="text-blue-200 text-sm" x-text="profile.location || ''"></p>
         <p x-show="profile.current_position" class="text-blue-100 text-sm mt-2">Currently: <span class="font-medium" x-text="profile.current_position"></span></p>
+        <p x-show="profileError" class="text-red-200 text-sm mt-2" x-text="profileError"></p>
+        <p x-show="profile.source === 'linkedin'" class="text-xs text-blue-200 mt-1 opacity-75">✓ Loaded from LinkedIn</p>
+        <p x-show="profile.source === 'stub'" class="text-xs text-yellow-200 mt-1 opacity-75">⚠ Stub data — set li_at cookie to load real profile</p>
       </div>
     </div>
   </div>
@@ -80,21 +86,51 @@
 function profilePanel() {
   return {
     dark: document.documentElement.classList.contains('dark'),
-    profile: { name: 'Your Name', headline: 'Building things on the internet', location: 'San Francisco, CA', current_position: 'Software Engineer', account_age: '4 years', posts: 142, connections: 1847 },
-    cookieHealth: { ok: true },
+    profile: { name: '— loading —', headline: '', location: null, current_position: null, account_age: null, posts: 0, connections: 0, avatar_url: null, source: 'stub' },
+    cookieHealth: { ok: false, detail: 'checking...' },
     accounts: [],
-    activity: [
-      { dot: 'bg-emerald-500', text: 'Posted a status update', time: '2h ago' },
-      { dot: 'bg-blue-500', text: 'Sent 5 connection requests', time: '5h ago' },
-      { dot: 'bg-purple-500', text: 'Drafted a new post', time: '1d ago' },
-    ],
+    activity: [],
+    profileError: null,
     async init() {
-      try { const r = await fetch('/api/profile'); if (r.ok) Object.assign(this.profile, await r.json()); } catch (e) {}
-      try { const r = await fetch('/api/accounts'); if (r.ok) this.accounts = await r.json(); } catch (e) {}
-      try { const r = await fetch('/api/cookies/health'); if (r.ok) this.cookieHealth = await r.json(); } catch (e) {}
+      // Profile
+      try {
+        const r = await fetch('/api/profile');
+        if (r.ok) {
+          const d = await r.json();
+          Object.assign(this.profile, d);
+        } else {
+          this.profileError = 'profile load failed: HTTP ' + r.status;
+        }
+      } catch (e) { this.profileError = 'profile load error: ' + e.message; }
+      // Accounts (API returns {accounts: [...], default: "..."})
+      try {
+        const r = await fetch('/api/accounts');
+        if (r.ok) {
+          const d = await r.json();
+          this.accounts = Array.isArray(d) ? d : (d.accounts || []);
+        }
+      } catch (e) { console.warn('accounts load failed', e); }
+      // Cookie health
+      try {
+        const r = await fetch('/api/cookies/health');
+        if (r.ok) { this.cookieHealth = await r.json(); }
+        else { this.cookieHealth = { ok: false, detail: 'health endpoint returned ' + r.status }; }
+      } catch (e) { this.cookieHealth = { ok: false, detail: e.message }; }
+      // Recent activity from audit
+      try {
+        const r = await fetch('/api/audit?limit=8');
+        if (r.ok) {
+          const d = await r.json();
+          const rows = Array.isArray(d) ? d : (d.entries || d.rows || d.audit || []);
+          this.activity = rows.slice(0, 8).map(e => {
+            const dot = e.outcome === 'success' ? 'bg-emerald-500' : (e.outcome === 'dry_run' ? 'bg-blue-500' : 'bg-purple-500');
+            return { dot, text: (e.action || 'activity') + (e.detail?.via ? ' · ' + e.detail.via : ''), time: e.created_at ? new Date(e.created_at).toLocaleString() : 'recently' };
+          });
+        }
+      } catch (e) { console.warn('activity load failed', e); }
     },
     async switchTo(a) {
-      try { await fetch('/api/accounts/' + a.id + '/activate', { method: 'POST' }); location.reload(); } catch (e) {}
+      try { await fetch('/api/accounts/' + a.id + '/activate', { method: 'POST' }); location.reload(); } catch (e) { console.warn('switch failed', e); }
     }
   }
 }

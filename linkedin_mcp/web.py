@@ -429,26 +429,103 @@ def api_accounts() -> dict[str, Any]:
 def api_profile() -> dict[str, Any]:
     """Current account profile info.
 
-    Source priority: AccountManager description > li_at env > .env LINKEDIN_NAME
+    Source priority: LinkedIn Voyager /me > AccountManager > env vars
     > realistic placeholder. Frontend merges into its `profile` object via
     Object.assign, so extra keys are ignored.
     """
     name = os.environ.get("LINKEDIN_NAME", "").strip()
     headline = os.environ.get("LINKEDIN_HEADLINE", "").strip()
     summary = os.environ.get("LINKEDIN_SUMMARY", "").strip()
-    source = "stub"
-
-    # Try AccountManager first
+    location = os.environ.get("LINKEDIN_LOCATION", "").strip()
+    avatar_url = None
+    source: str = "stub"
+    # NOTE: VoyagerClient uses async httpx; calling it from a sync FastAPI
+    # handler requires asyncio.run() which can hang if the underlying client
+    # holds background tasks. To avoid blocking the request, we run with a
+    # short timeout AND fall back to stub on any hang/error.
     try:
-        mgr = AccountManager(_accounts_path())
-        active = mgr.get_active()
-        if active and active.description:
-            # description may be a free-form string; only use it as a name
-            if not name:
+        from .api.profile import get_my_profile
+        from .api.client import VoyagerClient
+        import asyncio
+        li_at = os.environ.get("LI_AT", "").strip()
+        # Fallback: read from file if env not set
+        if not li_at:
+            try:
+                from pathlib import Path as _P
+                _candidates = []
+                _li_file_env = os.environ.get("LI_AT_FILE", "").strip()
+                if _li_file_env:
+                    _candidates.append(_P(_li_file_env))
+                _candidates.append(_P.home() / ".local" / "share" / "linkedin-mcp-pro" / "li_at")
+                _candidates.append(_P.home() / ".linkedin-mcp" / "li_at")
+                for _p in _candidates:
+                    if _p and str(_p) and _p.exists() and _p.is_file():
+                        try:
+                            li_at = _p.read_text().strip()
+                        except Exception:
+                            continue
+                        if li_at and len(li_at) >= 50:
+                            os.environ["LI_AT"] = li_at
+                            break
+            except Exception:
+                pass
+        if li_at:
+            client = VoyagerClient(li_at=li_at, timeout=5.0)
+            data = None
+            try:
+                # Use a fresh event loop with explicit close to avoid hangs
+                loop = asyncio.new_event_loop()
+                try:
+                    async def _do():
+                        async with client:
+                            return await asyncio.wait_for(get_my_profile(client), timeout=6.0)
+                    data = loop.run_until_complete(_do())
+                finally:
+                    try:
+                        loop.run_until_complete(loop.shutdown_asyncgens())
+                    except Exception:
+                        pass
+                    loop.close()
+            except Exception as _e:
+                log.info("Voyager /me fetch failed: %s", _e)
+            if isinstance(data, dict):
+                included = data.get("included", [])
+                me = next((e for e in included if isinstance(e, dict) and e.get("$type") == "com.linkedin.voyager.identity.profile.Profile"), None)
+                if me:
+                    first = (me.get("firstName") or "").strip()
+                    last = (me.get("lastName") or "").strip()
+                    full = (first + " " + last).strip() or me.get("publicIdentifier") or name
+                    if full:
+                        name = full
+                        source = "linkedin"
+                    hl = me.get("headline")
+                    if hl and not headline:
+                        headline = hl
+                        source = "linkedin"
+                    loc = me.get("location")
+                    if loc and not location:
+                        location = loc
+                    sm = me.get("summary")
+                    if sm and not summary:
+                        summary = sm
+                    av = me.get("picture") or me.get("profilePicture")
+                    if isinstance(av, dict):
+                        url = av.get("displayImage~", {}).get("elements", [{}])[0].get("identifiers", [{}])[0].get("identifier") or av.get("rootUrl")
+                        if url:
+                            avatar_url = url
+    except Exception as _e:
+        log.debug("Voyager import/setup failed: %s", _e)
+
+    # AccountManager as fallback
+    if not name or source == "stub":
+        try:
+            mgr = AccountManager(_accounts_path())
+            active = mgr.get_active()
+            if active and active.description and not name:
                 name = active.name.replace("_", " ").title()
-            source = "accounts"
-    except Exception:  # noqa: BLE001
-        pass
+                source = "accounts"
+        except Exception:  # noqa: BLE001
+            pass
 
     if not name:
         name = "Your Name"
@@ -481,8 +558,8 @@ def api_profile() -> dict[str, Any]:
         "name": name,
         "headline": headline,
         "summary": summary,
-        "avatar_url": None,
-        "location": os.environ.get("LINKEDIN_LOCATION", "").strip() or None,
+        "avatar_url": avatar_url,
+        "location": location or None,
         "current_position": headline or None,
         "account_age": os.environ.get("LINKEDIN_ACCOUNT_AGE", "").strip() or None,
         "posts": posts,
