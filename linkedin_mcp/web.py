@@ -56,6 +56,16 @@ try:
     app.include_router(llm_router)
 except Exception as _e:  # noqa: BLE001
     log.warning("llm_router not loaded: %s", _e)
+try:
+    from .jobs_router import router as jobs_router
+    from .jobs_router import bind_db as jobs_bind_db
+
+    app.include_router(jobs_router)
+    # NOTE: actual DB binding happens after `_db` is defined below.
+except Exception as _e:  # noqa: BLE001
+    log.warning("jobs_router not loaded: %s", _e)
+    jobs_router = None  # type: ignore[assignment]
+    jobs_bind_db = None  # type: ignore[assignment]
 
 # Serve static files (cookies panel, etc.)
 _static_dir = Path(__file__).parent / "static"
@@ -91,6 +101,22 @@ def _db() -> DB:
         return DB(cfg.storage.db_path)
     except Exception:
         return DB(Path("./data/linkedin-mcp-pro.db"))
+
+
+# Bind jobs module's DB now that _db is defined.
+if jobs_bind_db is not None:
+    try:
+        class _LazyDBAdapter:
+            def transaction(self):
+                return _db().transaction()
+
+            def audit(self, *a, **kw):
+                return _db().audit(*a, **kw)
+
+        jobs_bind_db(_LazyDBAdapter())
+        log.info("jobs_bind_db bound OK")
+    except Exception as _bind_e:  # noqa: BLE001
+        log.warning("jobs_bind_db explicit bind skipped: %s", _bind_e)
 
 
 def _safety(db: DB) -> SafetyGuard:

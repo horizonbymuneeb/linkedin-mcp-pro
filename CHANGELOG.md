@@ -3,6 +3,31 @@
 All notable changes to **linkedin-mcp-pro** are documented here.
 This format follows [Keep a Changelog](https://keepachangelog.com/) and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.2.0] - 2026-06-19
+
+### Added
+- **Jobs module** (`linkedin_mcp/jobs/`) — full LinkedIn auto-apply pipeline:
+  - `cv_parser.py` — PDF/DOCX/TXT upload + extract skills/experience/education/email/phone/links
+  - `profile.py` — 10-question wizard (work mode, cities, salary, role types, seniority, visa, blacklist, etc) with defaults seeded from CV
+  - `matcher.py` — keyword overlap + skill-list bonus + (optional) sentence-transformers semantic similarity; 0-100 score with per-component reasons
+  - `cover_letter.py` — LLM-generated (via existing pool) with 4 templates (default, concise, warm, founder) as fallback
+  - `searcher.py` — LinkedIn Voyager client with stub fallback; respects easy-apply / remote / location filters
+  - `applier.py` — eligibility gate (rate limit, blacklist, easy-apply, remote, score threshold) → match → cover letter → apply (dry-run by default) → tracker record
+  - `tracker.py` — SQLite table for applications, status, match_score, cover_letter, notes
+  - `jobs_router.py` — `/api/jobs/*` endpoints (health, cv/upload, wizard/questions, wizard/submit, profile GET/PUT, search, cover-letter/preview, apply, applications CRUD, settings, templates, reset)
+- **jobs.html** UI — 4 tabs (Setup / Search / Apply / Tracker) with Linear-inspired design, drag-drop CV upload, score ring on each job card, cover letter editor with tone selector, applications table
+
+### Changed
+- Web UI: `web.py` mounts `jobs_router` and binds the project's DB to the jobs module (resolves the circular import via sys.modules lookup)
+- Tests: 17 new tests in `tests/test_jobs.py` covering CV parsing, matcher, cover letter, profile, searcher, tracker (with sqlite-backed fixture), applier eligibility gates
+
+### Total
+- 721 tests passing (was 704)
+- 41 web endpoints (was 31)
+- 54 MCP tools (unchanged)
+
+---
+
 ## [2.1.0] - 2026-06-19
 
 ### Added
