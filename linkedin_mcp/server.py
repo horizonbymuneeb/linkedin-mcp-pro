@@ -1175,6 +1175,23 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             "poll_rss_feeds",
         ):
             data = await _dispatch_rss(name, arguments)
+        # Shadow-ban detector (v0.7.0) — read-only.
+        elif name in (
+            "check_shadowban",
+            "record_post_metrics",
+        ):
+            from .tools import shadowban as _sb_tools
+            if name == "check_shadowban":
+                data = _sb_tools.check_shadowban(
+                    drop_threshold=float(arguments.get("drop_threshold", 0.50)),
+                    min_baseline_posts=int(arguments.get("min_baseline_posts", 5)),
+                )
+            else:
+                data = _sb_tools.record_post_metrics(
+                    target=arguments["target"],
+                    impressions=int(arguments["impressions"]),
+                    engagement=int(arguments["engagement"]),
+                )
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
