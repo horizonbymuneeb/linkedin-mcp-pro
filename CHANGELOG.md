@@ -5,7 +5,52 @@ All notable changes to `linkedin-mcp-pro` are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.6.0] — 2026-06-18
+## [1.0.0] — 2026-06-18
+
+### Added (Tier 3)
+- **Shadow-ban detector (`linkedin_mcp/shadowban.py`)** — Engagement-based
+  shadow-ban detection. Tracks post impressions + engagement via
+  `session_state`, computes baseline median rate, raises alert when latest
+  post is >50% below baseline OR 3+ consecutive posts show suppression.
+  Status states: ok / warning / alert / no_data. 10 new tests.
+
+### Added (Tier 4)
+- **Web UI dashboard (`linkedin_mcp/web.py`)** — FastAPI single-page
+  dashboard at `http://127.0.0.1:8080`. Vanilla JS frontend (no React
+  build). Shows analytics summary, dead-man status, schedules,
+  templates, and a one-click AI drafter + post flow. CLI:
+  `linkedin-mcp-web`. 9 new tests.
+- **Carousel generator (`linkedin_mcp/carousel.py`)** — Splits long
+  posts into square slides (PIL + 1080x1080 PNGs), combines into a
+  multi-page PDF (LinkedIn document upload format). Strips markdown
+  headers, respects max chars per slide. Falls back to text-only
+  outline if Pillow not installed. 10 new tests.
+- **Webhook integrations (`linkedin_mcp/webhooks.py`)** — Fire HTTP
+  POSTs on events: `post.success`, `post.failed`, `shadowban.alert`,
+  `deadman.alert`, `schedule.fired`. Async by default, 10s timeout,
+  secrets never written to disk. 14 new tests.
+- **Competitor monitor (`linkedin_mcp/competitor.py`)** — Track up to
+  N competitor profiles + their posts. Weekly report ranks top
+  engagement. 12 new tests.
+- **Multi-platform adapters (`linkedin_mcp/multi_platform.py`)** —
+  Scaffold adapters for Twitter/X, Threads, Bluesky, Mastodon.
+  Format-aware (char limits), stub `post()` ready for your credentials.
+  7 new tests.
+- **AI engagement coach (`linkedin_mcp/coach.py`)** — Tips grounded
+  in real analytics + best-time data. Identifies low-cadence, high
+  failure rate, top day/hour patterns. 7 new tests.
+- **Content calendar (`linkedin_mcp/calendar.py`)** — Month-view YAML
+  planner. Statuses: idea / drafted / scheduled / posted. 12 new tests.
+- **Lead scraper (`linkedin_mcp/leads.py`)** — YAML-backed lead list
+  with CSV export for CRM import. 11 new tests.
+
+### Stats
+- **497 tests pass** (was 256 at v0.5.0 → 1.0.0)
+- **28 features total** across 4 tiers
+- **38+ MCP tools**, **10+ CLI subcommands**, **8 systemd units**
+- **License**: MIT, **Python**: 3.11+
+
+## [0.5.0] — 2026-06-18
 
 ### Added (Tier 2)
 

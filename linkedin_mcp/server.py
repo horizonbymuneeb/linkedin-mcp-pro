@@ -1066,6 +1066,71 @@ async def _dispatch_rss(name: str, args: dict) -> Any:
     raise ValueError(f"Unknown rss tool: {name}")
 
 
+async def _dispatch_v1(name: str, args: dict) -> Any:
+    """Dispatcher for the v1.0.0 feature set (webhooks, multi-platform, coach,
+    calendar, leads, competitor).
+    """
+    from .tools import v1_features as _v1
+    if name == "list_webhooks":
+        return _v1.list_webhooks()
+    if name == "add_webhook":
+        return _v1.add_webhook(
+            name=args["name"], url=args["url"],
+            events=args["events"], secret=args.get("secret", ""),
+        )
+    if name == "remove_webhook":
+        return _v1.remove_webhook(args["name"])
+    if name == "fire_webhook":
+        return _v1.fire_webhook(args["event"], args.get("payload") or {})
+    if name == "list_platforms":
+        return _v1.list_platforms_tool()
+    if name == "cross_post":
+        return _v1.cross_post_tool(
+            text=args["text"],
+            platforms=args["platforms"],
+            link=args.get("link", ""),
+        )
+    if name == "get_coaching_report":
+        return _v1.get_coaching_report(days=int(args.get("days", 30)))
+    if name == "list_calendar_entries":
+        return _v1.list_calendar_entries(args.get("month", ""), args.get("status", ""))
+    if name == "add_calendar_entry":
+        return _v1.add_calendar_entry(
+            date=args["date"], title=args["title"],
+            body=args.get("body", ""), status=args.get("status", "idea"),
+            tags=args.get("tags") or [],
+        )
+    if name == "update_calendar_status":
+        return _v1.update_calendar_status(args["date"], args["title"], args["new_status"])
+    if name == "get_calendar_summary":
+        return _v1.get_calendar_summary(args["month"])
+    if name == "list_leads":
+        return _v1.list_leads()
+    if name == "add_lead":
+        return _v1.add_lead(
+            name=args["name"], profile_url=args["profile_url"],
+            title=args.get("title", ""), company=args.get("company", ""),
+            location=args.get("location", ""),
+            tags=args.get("tags") or [], notes=args.get("notes", ""),
+        )
+    if name == "export_leads_csv":
+        return _v1.export_leads_csv(args.get("tag", ""), args.get("company", ""))
+    if name == "list_competitors_tool":
+        return _v1.list_competitors_tool()
+    if name == "add_competitor_tool":
+        return _v1.add_competitor_tool(args["name"], args["profile_url"], args.get("notes", ""))
+    if name == "add_competitor_post_tool":
+        return _v1.add_competitor_post_tool(
+            competitor=args["competitor"], url=args["url"], title=args["title"],
+            impressions=int(args.get("impressions", 0)),
+            reactions=int(args.get("reactions", 0)),
+            comments=int(args.get("comments", 0)),
+        )
+    if name == "get_competitor_report_tool":
+        return _v1.get_competitor_report_tool(days=int(args.get("days", 7)))
+    raise ValueError(f"Unknown v1 tool: {name}")
+
+
 # ----------------------------------------------------------------------------
 # MCP server wiring
 # ----------------------------------------------------------------------------
@@ -1200,6 +1265,16 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                 title=arguments.get("title", ""),
                 max_chars_per_slide=int(arguments.get("max_chars_per_slide", 280)),
             )
+        # v1.0.0 features — webhooks, multi-platform, coach, calendar, leads, competitor
+        elif name in (
+            "list_webhooks", "add_webhook", "remove_webhook", "fire_webhook",
+            "list_platforms", "cross_post",
+            "get_coaching_report",
+            "list_calendar_entries", "add_calendar_entry", "update_calendar_status", "get_calendar_summary",
+            "list_leads", "add_lead", "export_leads_csv",
+            "list_competitors_tool", "add_competitor_tool", "add_competitor_post_tool", "get_competitor_report_tool",
+        ):
+            data = await _dispatch_v1(name, arguments)
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
