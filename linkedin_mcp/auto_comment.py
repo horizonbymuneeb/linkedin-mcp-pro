@@ -1,4 +1,4 @@
-"""Auto-comment: search posts by keyword, post AI-generated comments.
+"""Auto-comment: search posts by keyword, post auto-generated comments.
 
 THIS IS THE HIGHEST-RISK TIER 3 FEATURE. Comments are the #1 way LinkedIn
 detects inauthentic behavior. Defaults are very tight:
@@ -211,7 +211,7 @@ class CommentFilter:
         return True, "ok"
 
     def is_safe_draft(self, draft: str) -> tuple[bool, str]:
-        """Check if AI-generated draft is safe to post."""
+        """Check if auto-generated draft is safe to post."""
         if len(draft) < self.min_comment_length:
             return False, f"draft too short ({len(draft)} chars)"
         if len(draft) > self.max_comment_length:
