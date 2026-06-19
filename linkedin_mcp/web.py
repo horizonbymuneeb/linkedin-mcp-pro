@@ -380,11 +380,19 @@ def dashboard() -> HTMLResponse:
     """Serve the new Tailwind+Alpine dashboard from static/index.html.
 
     Falls back to the legacy inline dashboard if the file is missing.
+    Sends no-cache headers so updates show on next reload.
     """
     index_file = _static_dir / "index.html"
     if index_file.exists():
-        return HTMLResponse(index_file.read_text(encoding="utf-8"))
-    return HTMLResponse(_DASHBOARD_HTML)
+        body = index_file.read_text(encoding="utf-8")
+    else:
+        body = _DASHBOARD_HTML
+    headers = {
+        "Cache-Control": "no-cache, no-store, must-revalidate",
+        "Pragma": "no-cache",
+        "Expires": "0",
+    }
+    return HTMLResponse(content=body, headers=headers)
 
 
 def main() -> None:
