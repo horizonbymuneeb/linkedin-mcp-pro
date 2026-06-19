@@ -1025,6 +1025,47 @@ async def _dispatch_accounts(name: str, args: dict) -> Any:
     raise ValueError(f"Unknown accounts tool: {name}")
 
 
+async def _dispatch_ab_tests(name: str, args: dict) -> Any:
+    """Dispatcher for A/B test tools (v0.6.0)."""
+    from .tools import ab_testing as _ab_tools
+    if name == "list_ab_tests":
+        return _ab_tools.list_ab_tests()
+    if name == "create_ab_test":
+        return _ab_tools.create_ab_test(
+            name=args["name"],
+            variant_a_text=args["variant_a_text"],
+            variant_b_text=args["variant_b_text"],
+            target_impressions=int(args.get("target_impressions", 100)),
+        )
+    if name == "record_ab_impressions":
+        return _ab_tools.record_ab_impressions(args["name"], args["variant"], int(args["n"]))
+    if name == "record_ab_engagement":
+        return _ab_tools.record_ab_engagement(args["name"], args["variant"], int(args["n"]))
+    if name == "get_ab_test_result":
+        return _ab_tools.get_ab_test_result(args["name"])
+    raise ValueError(f"Unknown ab-tests tool: {name}")
+
+
+async def _dispatch_rss(name: str, args: dict) -> Any:
+    """Dispatcher for RSS poster tools (v0.6.0)."""
+    from .tools import rss_poster as _rss_tools
+    if name == "list_rss_feeds":
+        return _rss_tools.list_rss_feeds()
+    if name == "add_rss_feed":
+        return _rss_tools.add_rss_feed(
+            name=args["name"],
+            url=args["url"],
+            template=args.get("template"),
+            text_prefix=args.get("text_prefix", ""),
+            max_per_day=int(args.get("max_per_day", 1)),
+        )
+    if name == "remove_rss_feed":
+        return _rss_tools.remove_rss_feed(args["name"])
+    if name == "poll_rss_feeds":
+        return _rss_tools.poll_rss_feeds(limit_per_feed=int(args.get("limit_per_feed", 3)))
+    raise ValueError(f"Unknown rss tool: {name}")
+
+
 # ----------------------------------------------------------------------------
 # MCP server wiring
 # ----------------------------------------------------------------------------
@@ -1117,6 +1158,23 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             from .telegram_bot import TelegramBot
             bot = TelegramBot()
             data = {"ok": True, "status": bot.status()}
+        # A/B testing (v0.6.0) — file-backed, no safety guard.
+        elif name in (
+            "list_ab_tests",
+            "create_ab_test",
+            "record_ab_impressions",
+            "record_ab_engagement",
+            "get_ab_test_result",
+        ):
+            data = await _dispatch_ab_tests(name, arguments)
+        # RSS auto-posts (v0.6.0) — file-backed, network access only on poll().
+        elif name in (
+            "list_rss_feeds",
+            "add_rss_feed",
+            "remove_rss_feed",
+            "poll_rss_feeds",
+        ):
+            data = await _dispatch_rss(name, arguments)
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
