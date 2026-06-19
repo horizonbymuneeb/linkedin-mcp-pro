@@ -1192,6 +1192,14 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
                     impressions=int(arguments["impressions"]),
                     engagement=int(arguments["engagement"]),
                 )
+        # Carousel generator (v1.0.0) — text-only fallback if Pillow absent.
+        elif name == "generate_carousel":
+            from .tools import carousel as _car_tools
+            data = _car_tools.generate_carousel(
+                text=arguments["text"],
+                title=arguments.get("title", ""),
+                max_chars_per_slide=int(arguments.get("max_chars_per_slide", 280)),
+            )
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
