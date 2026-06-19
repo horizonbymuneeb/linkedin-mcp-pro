@@ -11,7 +11,7 @@
 
 ## Reporting a Vulnerability
 
-Email: **security@horizonbymuneeb.dev**
+Email: **horizonbymuneeb@gmail.com**
 (or open a private security advisory on GitHub)
 
 **Please do not** open a public issue for security vulnerabilities.
