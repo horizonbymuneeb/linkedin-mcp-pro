@@ -31,12 +31,16 @@ fi
 say "Python $PY_VERSION OK"
 
 # --- Install package ---------------------------------------------------------
+# Install from GitHub tag (no PyPI yet). Override with LINKEDIN_MCP_REPO env var.
+REPO_URL="${LINKEDIN_MCP_REPO:-https://github.com/horizonbymuneeb/linkedin-mcp-pro.git}"
+REPO_TAG="${LINKEDIN_MCP_TAG:-v2.0.0}"
+PKG_SPEC="git+${REPO_URL}@${REPO_TAG}"
 if command -v pipx >/dev/null 2>&1; then
-  say "Installing with pipx"
-  pipx install linkedin-mcp-pro || pipx upgrade linkedin-mcp-pro || true
+  say "Installing with pipx (${PKG_SPEC})"
+  pipx install --force "${PKG_SPEC}" || pipx upgrade linkedin-mcp-pro || true
 elif python3 -m pip --version >/dev/null 2>&1; then
-  say "Installing with pip (user)"
-  python3 -m pip install --user --upgrade linkedin-mcp-pro
+  say "Installing with pip (user) (${PKG_SPEC})"
+  python3 -m pip install --user --upgrade "${PKG_SPEC}"
 else
   die "Neither pipx nor pip is available. Install pip and re-run."
 fi

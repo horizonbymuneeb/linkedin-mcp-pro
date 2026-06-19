@@ -29,8 +29,12 @@ if ($major -lt 3 -or ($major -eq 3 -and $minor -lt 11)) {
 Say "Python $pyVerOutput OK"
 
 # --- Install package ---------------------------------------------------------
-Say "Installing linkedin-mcp-pro (user)"
-& $py -m pip install --user --upgrade linkedin-mcp-pro
+# Install from GitHub tag (no PyPI yet). Override with $env:LINKEDIN_MCP_REPO / $env:LINKEDIN_MCP_TAG.
+$repoUrl = if ($env:LINKEDIN_MCP_REPO) { $env:LINKEDIN_MCP_REPO } else { 'https://github.com/horizonbymuneeb/linkedin-mcp-pro.git' }
+$repoTag = if ($env:LINKEDIN_MCP_TAG)  { $env:LINKEDIN_MCP_TAG  } else { 'v2.0.0' }
+$pkgSpec = "git+${repoUrl}@${repoTag}"
+Say "Installing linkedin-mcp-pro (user) (${pkgSpec})"
+& $py -m pip install --user --upgrade $pkgSpec
 if ($LASTEXITCODE -ne 0) { Die "pip install failed." }
 
 # --- Create profile dir ------------------------------------------------------

@@ -58,7 +58,8 @@ Screenshots are auto-generated — see [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md
 ## 🚀 Install
 
 ```bash
-pip install linkedin-mcp-pro
+# one-liner (recommended)
+curl -fsSL https://raw.githubusercontent.com/horizonbymuneeb/linkedin-mcp-pro/main/install.sh | bash
 # or from source
 git clone https://github.com/horizonbymuneeb/linkedin-mcp-pro
 cd linkedin-mcp-pro

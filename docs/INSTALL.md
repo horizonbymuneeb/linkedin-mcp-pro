@@ -24,9 +24,13 @@ Both scripts will:
 ## Manual install
 
 ```bash
-python3 -m pip install --user linkedin-mcp-pro
-# or, recommended:
-pipx install linkedin-mcp-pro
+# one-liner (recommended)
+curl -fsSL https://raw.githubusercontent.com/horizonbymuneeb/linkedin-mcp-pro/main/install.sh | bash
+
+# or manual install from GitHub:
+python3 -m pip install --user "git+https://github.com/horizonbymuneeb/linkedin-mcp-pro.git@v2.0.0"
+# or with pipx (recommended):
+pipx install "git+https://github.com/horizonbymuneeb/linkedin-mcp-pro.git@v2.0.0"
 ```
 
 Then make sure `~/.local/bin` is on your `PATH`:
