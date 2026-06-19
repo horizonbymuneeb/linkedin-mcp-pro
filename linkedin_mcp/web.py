@@ -40,7 +40,7 @@ log = logging.getLogger("linkedin_mcp.web")
 app = FastAPI(
     title="linkedin-mcp-pro web",
     description="Browser UI for the LinkedIn MCP server",
-    version="2.0.1",
+    version="2.0.2",
 )
 app.include_router(cookies_router)
 try:
@@ -396,8 +396,21 @@ def dashboard() -> HTMLResponse:
 
 
 def main() -> None:
-    """CLI entry point: linkedin-mcp-web."""
+    """CLI entry point: linkedin-mcp-web.
+
+    Usage:
+        linkedin-mcp-web [--host 127.0.0.1] [--port 8080]
+    """
+    import argparse
     import uvicorn
-    host = os.environ.get("LINKEDIN_MCP_WEB_HOST", "127.0.0.1")
-    port = int(os.environ.get("LINKEDIN_MCP_WEB_PORT", "8080"))
-    uvicorn.run(app, host=host, port=port, log_level="info")
+
+    parser = argparse.ArgumentParser(prog="linkedin-mcp-web", description="LinkedIn MCP Pro web UI")
+    parser.add_argument("--host", default=os.environ.get("LINKEDIN_MCP_WEB_HOST", "127.0.0.1"),
+                        help="Bind host (default: 127.0.0.1, env: LINKEDIN_MCP_WEB_HOST)")
+    parser.add_argument("--port", type=int, default=int(os.environ.get("LINKEDIN_MCP_WEB_PORT", "8080")),
+                        help="Bind port (default: 8080, env: LINKEDIN_MCP_WEB_PORT)")
+    parser.add_argument("--reload", action="store_true", help="Auto-reload on file changes (dev mode)")
+    args = parser.parse_args()
+
+    uvicorn.run("linkedin_mcp.web:app", host=args.host, port=args.port,
+                log_level="info", reload=args.reload)
