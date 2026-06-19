@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>linkedin-mcp-pro · Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            'li-blue': '#0a66c2',
+            'li-blue-dark': '#004182',
+            'li-blue-light': '#e8f0fe',
+          },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          animation: {
+            'fade-in': 'fadeIn 0.3s ease-in-out',
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } },
+          },
+        },
+      },
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <style>[x-cloak] { display: none !important; } body { font-family: 'Inter', system-ui, sans-serif; }</style>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) {
+        document.documentElement.classList.add('dark');
+      }
+    })();
+  </script>
+</head>
+<body x-data="dash" class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+<!-- TOP NAV -->
+<nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gradient-to-br from-li-blue to-li-blue-dark rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+        </div>
+        <span class="text-lg font-bold bg-gradient-to-r from-li-blue to-li-blue-dark bg-clip-text text-transparent">linkedin-mcp-pro</span>
+        <span class="px-2 py-0.5 text-xs font-medium bg-li-blue/10 text-li-blue rounded-full" x-text="'v' + version"></span>
+      </a>
+      <div class="hidden md:flex items-center gap-1">
+        <a href="/" class="px-3 py-1.5 text-sm font-medium text-li-blue bg-li-blue/10 rounded-md">Dashboard</a>
+        <a href="/static/cookies.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Cookies</a>
+        <a href="/static/llm.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">LLM</a>
+        <a href="/static/drafts.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Drafts</a>
+        <a href="/static/schedules.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Schedules</a>
+        <a href="/static/templates.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Templates</a>
+        <a href="/static/analytics.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Analytics</a>
+        <a href="/static/safety.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Safety</a>
+        <a href="/static/engagement.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Engagement</a>
+        <a href="/static/audit.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Audit</a>
+        <a href="/static/profile.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Profile</a>
+        <a href="/static/install.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Install</a>
+        <a href="/static/settings.html" class="px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md transition">Settings</a>
+      </div>
+      <div class="flex items-center gap-2">
+        <button @click="toggleDark()" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+          <svg x-show="!dark" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+          <svg x-show="dark" x-cloak class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+        </button>
+        <button @click="mobileMenu = !mobileMenu" class="md:hidden p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    </div>
+    <div x-show="mobileMenu" x-cloak x-transition class="md:hidden pb-4 grid grid-cols-2 gap-1">
+      <a href="/" class="px-3 py-2 text-sm font-medium rounded-md bg-li-blue/10 text-li-blue">Dashboard</a>
+      <a href="/static/cookies.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Cookies</a>
+      <a href="/static/llm.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">LLM</a>
+      <a href="/static/drafts.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Drafts</a>
+      <a href="/static/schedules.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Schedules</a>
+      <a href="/static/templates.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Templates</a>
+      <a href="/static/analytics.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Analytics</a>
+      <a href="/static/safety.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Safety</a>
+      <a href="/static/engagement.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Engagement</a>
+      <a href="/static/audit.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Audit</a>
+      <a href="/static/profile.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Profile</a>
+      <a href="/static/install.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Install</a>
+      <a href="/static/settings.html" class="px-3 py-2 text-sm font-medium rounded-md hover:bg-gray-100 dark:hover:bg-gray-800">Settings</a>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in space-y-6">
+
+  <!-- HERO -->
+  <div class="relative overflow-hidden rounded-2xl bg-gradient-to-br from-li-blue to-li-blue-dark p-8 text-white shadow-lg">
+    <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(circle at 20% 50%, white 0%, transparent 50%), radial-gradient(circle at 80% 80%, white 0%, transparent 50%);"></div>
+    <div class="relative flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">linkedin-mcp-pro</h1>
+        <p class="text-blue-100 mb-3">LinkedIn API for AI agents · 54 MCP tools · Ban-safety built in</p>
+        <div class="flex flex-wrap gap-2">
+          <a href="/static/install.html" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur rounded-md text-sm font-medium transition">Install &amp; Agents</a>
+          <a href="/static/llm.html" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur rounded-md text-sm font-medium transition">LLM Keys</a>
+          <a href="https://github.com/horizonbymuneeb/linkedin-mcp-pro" class="px-3 py-1.5 bg-white/20 hover:bg-white/30 backdrop-blur rounded-md text-sm font-medium transition">GitHub ↗</a>
+        </div>
+      </div>
+      <div class="hidden md:block text-right">
+        <div class="text-5xl font-bold opacity-20">in</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPI STATS -->
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:shadow-md transition">
+      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Posts (30d)</div>
+      <div class="text-3xl font-bold mt-2" x-text="summary ? summary.total_posts : '–'"></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:shadow-md transition">
+      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Success rate</div>
+      <div class="text-3xl font-bold mt-2" x-text="summary ? (summary.success_rate_pct + '%') : '–'"></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:shadow-md transition">
+      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Avg chars</div>
+      <div class="text-3xl font-bold mt-2" x-text="summary ? summary.avg_post_length : '–'"></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5 hover:shadow-md transition">
+      <div class="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Data points</div>
+      <div class="text-3xl font-bold mt-2" x-text="summary ? summary.data_points : '–'"></div>
+    </div>
+  </div>
+
+  <!-- DEADMAN + DRAFT 2-col -->
+  <div class="grid lg:grid-cols-2 gap-6">
+
+    <!-- Deadman switch -->
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+      <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
+        <span class="text-xl">🚨</span> Dead-man switch
+      </h2>
+      <template x-if="deadman">
+        <div>
+          <div class="flex items-center gap-2 mb-2 flex-wrap">
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-semibold"
+              :class="{
+                'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300': deadman.status === 'ok',
+                'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300': deadman.status === 'warning',
+                'bg-rose-100 text-rose-700 dark:bg-rose-900/40 dark:text-rose-300': deadman.status === 'alert'
+              }"
+              x-text="deadman.status.toUpperCase()"></span>
+            <span class="text-sm text-gray-600 dark:text-gray-400" x-text="` — ${deadman.days_since ?? 'n/a'} days since last post (threshold ${deadman.threshold_days ?? '?'})`"></span>
+          </div>
+          <template x-if="deadman.alerts && deadman.alerts.length">
+            <ul class="mt-3 space-y-1 text-sm text-gray-600 dark:text-gray-400">
+              <template x-for="a in deadman.alerts" :key="a">
+                <li x-text="'• ' + a"></li>
+              </template>
+            </ul>
+          </template>
+        </div>
+      </template>
+      <template x-if="!deadman">
+        <div class="text-sm text-gray-500">loading…</div>
+      </template>
+      <a href="/static/schedules.html" class="inline-block mt-4 text-sm text-li-blue hover:underline">Configure schedules →</a>
+    </div>
+
+    <!-- Draft a post -->
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+      <h2 class="text-lg font-semibold mb-3 flex items-center gap-2">
+        <span class="text-xl">✍️</span> Draft a post
+      </h2>
+      <div class="flex flex-col sm:flex-row gap-2 mb-3">
+        <input x-model="topic" placeholder="Topic (e.g. DeepSeek V3 impact)" class="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-li-blue focus:border-transparent text-sm">
+        <select x-model="tone" class="px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm">
+          <option>professional</option>
+          <option>casual</option>
+          <option>thought-leader</option>
+          <option>storytelling</option>
+        </select>
+        <button @click="draftPost()" :disabled="drafting || !topic.trim()" class="px-4 py-2 bg-li-blue hover:bg-li-blue-dark text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed text-sm whitespace-nowrap">
+          <span x-show="!drafting">Draft</span>
+          <span x-show="drafting" x-cloak>Drafting…</span>
+        </button>
+      </div>
+      <textarea x-model="draft" rows="4" placeholder="Draft appears here…" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-li-blue focus:border-transparent text-sm font-mono"></textarea>
+      <div class="flex items-center gap-3 mt-3 flex-wrap">
+        <button @click="postDraft()" :disabled="posting || !draft.trim()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium transition disabled:opacity-50 disabled:cursor-not-allowed text-sm">
+          <span x-show="!posting">Post this draft</span>
+          <span x-show="posting" x-cloak>Posting…</span>
+        </button>
+        <span class="text-sm" :class="postStatus.startsWith('✓') ? 'text-emerald-600' : 'text-rose-600'" x-text="postStatus"></span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCHEDULES + TEMPLATES -->
+  <div class="grid lg:grid-cols-2 gap-6">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold flex items-center gap-2"><span class="text-xl">📅</span> Schedules</h2>
+        <a href="/static/schedules.html" class="text-sm text-li-blue hover:underline">View all →</a>
+      </div>
+      <template x-if="schedules.length === 0">
+        <p class="text-sm text-gray-500">No schedules yet.</p>
+      </template>
+      <template x-if="schedules.length > 0">
+        <ul class="space-y-2 text-sm">
+          <template x-for="s in schedules" :key="s.name">
+            <li class="flex items-center justify-between p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800 gap-2">
+              <span class="truncate"><span :class="s.enabled ? 'text-emerald-600' : 'text-gray-400'" x-text="s.enabled ? '✓' : '✗'"></span> <span x-text="s.name"></span></span>
+              <code class="text-xs text-gray-500 truncate" x-text="s.cron || s.at || ''"></code>
+            </li>
+          </template>
+        </ul>
+      </template>
+    </div>
+
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+      <div class="flex items-center justify-between mb-3">
+        <h2 class="text-lg font-semibold flex items-center gap-2"><span class="text-xl">📝</span> Templates</h2>
+        <a href="/static/templates.html" class="text-sm text-li-blue hover:underline">View all →</a>
+      </div>
+      <template x-if="templates.length === 0">
+        <p class="text-sm text-gray-500">No templates yet.</p>
+      </template>
+      <template x-if="templates.length > 0">
+        <ul class="space-y-2 text-sm">
+          <template x-for="t in templates" :key="t.name">
+            <li class="p-2 rounded-md hover:bg-gray-50 dark:hover:bg-gray-800">
+              <div class="font-medium" x-text="t.name"></div>
+              <div class="text-xs text-gray-500" x-text="t.description || '(no description)'"></div>
+            </li>
+          </template>
+        </ul>
+      </template>
+    </div>
+  </div>
+
+  <!-- QUICK ACTIONS -->
+  <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+    <h2 class="text-lg font-semibold mb-3">⚡ Quick actions</h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <a href="/static/safety.html" class="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-li-blue hover:bg-li-blue/5 transition text-center text-sm font-medium">🛡 Safety gate</a>
+      <a href="/static/engagement.html" class="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-li-blue hover:bg-li-blue/5 transition text-center text-sm font-medium">🤖 Auto-engage</a>
+      <a href="/static/audit.html" class="px-4 py-3 border border-gray-200 dark:border-gray-800 rounded-lg hover:border-li-blue hover:bg-li-blue/5 transition text-center text-sm font-medium">📜 Audit log</a>
+      <a href="/static/analytics.html" class="px-4 py-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-li-blue hover:bg-li-blue/5 transition text-center text-sm font-medium">📊 Analytics</a>
+    </div>
+  </div>
+
+  <footer class="text-center text-xs text-gray-500 dark:text-gray-400 py-4">
+    MIT licensed · <span x-text="'v' + version"></span> · <a href="https://github.com/horizonbymuneeb/linkedin-mcp-pro" class="hover:underline">github.com/horizonbymuneeb/linkedin-mcp-pro</a>
+  </footer>
+</main>
+
+<script>
+async function jget(url) {
+  const r = await fetch(url);
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+async function jpost(url, body) {
+  const r = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+  if (!r.ok) throw new Error(await r.text());
+  return r.json();
+}
+
+document.addEventListener('alpine:init', () => {
+  Alpine.data('dash', () => ({
+    dark: document.documentElement.classList.contains('dark'),
+    mobileMenu: false,
+    version: '…',
+    summary: null,
+    deadman: null,
+    schedules: [],
+    templates: [],
+    topic: '',
+    tone: 'professional',
+    draft: '',
+    drafting: false,
+    posting: false,
+    postStatus: '',
+    toggleDark() {
+      this.dark = !this.dark;
+      document.documentElement.classList.toggle('dark', this.dark);
+      localStorage.setItem('theme', this.dark ? 'dark' : 'light');
+    },
+    async init() {
+      try { const v = await jget('/api/version'); this.version = v.version || '?'; } catch (e) { this.version = '?'; }
+      try { this.summary = await jget('/api/summary?days=30'); } catch (e) { console.warn('summary', e); }
+      try { this.deadman = await jget('/api/deadman'); } catch (e) { console.warn('deadman', e); }
+      try { this.schedules = await jget('/api/schedules'); } catch (e) { console.warn('schedules', e); }
+      try { this.templates = await jget('/api/templates'); } catch (e) { console.warn('templates', e); }
+    },
+    async draftPost() {
+      if (!this.topic.trim()) return;
+      this.drafting = true;
+      this.postStatus = '';
+      try {
+        const r = await jpost('/api/drafts', {topic: this.topic, tone: this.tone, length: 800, include_hashtags: false});
+        this.draft = r.text || '';
+      } catch (e) { this.postStatus = '✗ ' + e.message; }
+      finally { this.drafting = false; }
+    },
+    async postDraft() {
+      if (!this.draft.trim()) return;
+      this.posting = true; this.postStatus = '';
+      try {
+        const r = await jpost('/api/post', {text: this.draft, dry_run: false});
+        this.postStatus = '✓ Posted (' + (r.text_len || 0) + ' chars)';
+      } catch (e) { this.postStatus = '✗ ' + e.message; }
+      finally { this.posting = false; }
+    }
+  }));
+});
+</script>
+
+</body>
+</html>

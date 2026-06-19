@@ -40,7 +40,7 @@ log = logging.getLogger("linkedin_mcp.web")
 app = FastAPI(
     title="linkedin-mcp-pro web",
     description="Browser UI for the LinkedIn MCP server",
-    version="2.0.0",
+    version="2.0.1",
 )
 app.include_router(cookies_router)
 try:
@@ -93,6 +93,11 @@ def _safety(db: DB) -> SafetyGuard:
 # ----------------------------------------------------------------------------
 # API routes
 # ----------------------------------------------------------------------------
+
+
+@app.get("/api/version")
+def api_version() -> dict[str, Any]:
+    return {"version": app.version, "name": app.title}
 
 
 @app.get("/api/summary")
@@ -372,6 +377,13 @@ loadSummary(); loadDeadman(); loadSchedules(); loadTemplates();
 
 @app.get("/", response_class=HTMLResponse)
 def dashboard() -> HTMLResponse:
+    """Serve the new Tailwind+Alpine dashboard from static/index.html.
+
+    Falls back to the legacy inline dashboard if the file is missing.
+    """
+    index_file = _static_dir / "index.html"
+    if index_file.exists():
+        return HTMLResponse(index_file.read_text(encoding="utf-8"))
     return HTMLResponse(_DASHBOARD_HTML)
 
 
