@@ -241,7 +241,7 @@
           </div>
           <div class="flex items-center gap-2">
             <button @click="save()" class="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md font-medium transition">Save draft</button>
-            <button @click="post()" :disabled="!plainText().trim()" class="px-5 py-1.5 bg-li-blue hover:bg-li-blue-dark disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full text-sm font-semibold transition">Post</button>
+            <button @click="post()" :disabled="!plainText.trim()" class="px-5 py-1.5 bg-li-blue hover:bg-li-blue-dark disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full text-sm font-semibold transition">Post</button>
           </div>
         </div>
 
