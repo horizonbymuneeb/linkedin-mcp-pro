@@ -1,0 +1,45 @@
+/* LinkedIn MCP Pro docs — custom styling */
+
+/* Tighten the hero on the home page */
+.md-typeset .hero {
+    margin: 2rem 0;
+    padding: 2rem;
+    background: linear-gradient(135deg, #5e6ad2 0%, #0a66c2 100%);
+    border-radius: 12px;
+    color: white;
+}
+
+/* Make code blocks in installation instructions stand out */
+.md-typeset code {
+    border-radius: 4px;
+}
+
+/* Highlight the badge row on the home page */
+.md-typeset .badges {
+    margin: 1rem 0 2rem 0;
+}
+
+.md-typeset .badges img {
+    margin-right: 0.5rem;
+    margin-bottom: 0.25rem;
+}
+
+/* Slightly larger cards */
+.md-typeset .grid.cards > ul > li {
+    border-radius: 10px;
+    transition: transform 200ms ease;
+}
+
+.md-typeset .grid.cards > ul > li:hover {
+    transform: translateY(-2px);
+}
+
+/* Make warning admonitions use LinkedIn blue accent */
+.md-typeset .admonition.warning {
+    border-left-color: #0a66c2;
+}
+
+/* Code copy button always visible on hover */
+.md-typeset pre:hover .md-clipboard {
+    opacity: 1;
+}

@@ -1,0 +1,152 @@
+site_name: LinkedIn MCP Pro
+site_description: LinkedIn automation for AI agents — 54 MCP tools, ban-safety gates, full web dashboard.
+site_author: horizonbymuneeb
+
+repo_name: horizonbymuneeb/linkedin-mcp-pro
+repo_url: https://github.com/horizonbymuneeb/linkedin-mcp-pro
+edit_uri: edit/main/docs/
+
+docs_dir: docs
+site_dir: site
+
+# Strict mode fails on warnings — keeps docs clean.
+strict: false
+
+theme:
+  name: material
+  language: en
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - navigation.indexes
+    - navigation.tracking
+    - navigation.footer
+    - toc.follow
+    - search.suggest
+    - search.highlight
+    - search.share
+    - content.code.copy
+    - content.code.annotate
+    - content.tabs.link
+    - content.tooltips
+    - content.action.edit
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: indigo
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    view: material/eye
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - def_list
+  - footnotes
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+      toc_depth: 3
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
+  - pymdownx.keys
+  - pymdownx.mark
+  - pymdownx.tilde
+  - pymdownx.caret
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.smartsymbols
+  - pymdownx.arithmatex:
+      generic: true
+
+plugins:
+  - search:
+      lang: en
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          paths: [linkedin_mcp]
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            members_order: source
+            separate_signature: true
+            unwrap_annotated: true
+            filters: ["!^_"]
+            docstring_section_style: table
+            heading_level: 2
+            merge_init_into_class: true
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/horizonbymuneeb
+    - icon: fontawesome/brands/python
+      link: https://pypi.org/project/linkedin-mcp-pro/
+  generator: false
+
+extra_css:
+  - assets/stylesheets/extra.css
+
+nav:
+  - Home: index.md
+  - Getting started:
+      - getting-started/install.md
+      - getting-started/quickstart.md
+      - getting-started/architecture.md
+      - getting-started/agents.md
+      - getting-started/contributing.md
+  - Guides:
+      - guides/dashboard.md
+      - guides/jobs.md
+      - guides/drafts.md
+      - guides/scheduling.md
+      - guides/engagement.md
+      - guides/multi-account.md
+  - Reference:
+      - reference/cli/index.md
+      - reference/api/index.md
+      - reference/mcp-tools/index.md
+  - Operations:
+      - operations/safety.md
+      - operations/proxy-setup.md
+      - operations/termux.md
+      - operations/screenshots.md
+      - operations/roadmap.md
+      - operations/troubleshooting.md
+
+copyright: Copyright &copy; 2025 horizonbymuneeb — Released under the MIT License.

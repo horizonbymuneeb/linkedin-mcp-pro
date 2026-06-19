@@ -70,3 +70,4 @@ scripts/__pycache__/
 .planning/
 PLAN*.md
 ROADMAP_PRIVATE*.md
+site/

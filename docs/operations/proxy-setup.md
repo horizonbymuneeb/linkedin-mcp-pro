@@ -208,7 +208,7 @@ cloudflared tunnel route dns my-laptop laptop.yourdomain.com
 
 **Best for:** You're mobile, want a backup proxy, or don't have a laptop handy.
 
-See [`TERMUX_SETUP.md`](TERMUX_SETUP.md) for the full guide. Short version:
+See [`TERMUX_SETUP.md`](termux.md) for the full guide. Short version:
 
 ```bash
 # On phone (in Termux)

@@ -1,168 +1,162 @@
-# linkedin-mcp-pro
+# LinkedIn MCP Pro
 
-> **54 MCP tools** for LinkedIn automation — posting, search, engagement, analytics, scheduling, and an 11-panel **Tailwind+Alpine** web UI.
+> **LinkedIn automation for AI agents — 54 MCP tools, ban-safety gates, full web dashboard, MIT licensed.**
 
-[![Tests](https://img.shields.io/badge/tests-685%20passing-brightgreen)]()
-[![MCP Tools](https://img.shields.io/badge/MCP%20tools-54-blue)]()
-[![Web Panels](https://img.shields.io/badge/web%20panels-11-purple)]()
-[![Version](https://img.shields.io/badge/version-2.0.0-orange)]()
+[![Tests](https://img.shields.io/badge/tests-721%20passing-10b981)](https://github.com/horizonbymuneeb/linkedin-mcp-pro)
+[![Version](https://img.shields.io/badge/version-2.3.2-5e6ad2)](https://github.com/horizonbymuneeb/linkedin-mcp-pro/releases)
+[![Python](https://img.shields.io/badge/python-3.11%2B-3776ab)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-22c55e)](LICENSE)
+[![Docs](https://img.shields.io/badge/docs-live-0a66c2)](https://horizonbymuneeb.github.io/linkedin-mcp-pro/)
 
----
-
-## ✨ What's new in v2.0
-
-- **🎨 Web UI Redesign** — 11 panels migrated to **Tailwind CSS + Alpine.js** (CDN, no build step). Dark/light mode, mobile responsive, gradient hero cards, Inter font, sticky nav.
-- **🛠 Install Wizard** — New `linkedin-mcp-install` CLI: `doctor`, `detect`, `add`, `remove`, `print-configs`, `verify` for 6 agents.
-- **🔑 LLM API Key Management** — 6 providers (OpenAI, Anthropic, OpenRouter, NVIDIA, Custom, Pool) with masked keys, test connection, base_url override.
-- **🛡 Ban-Safety Gate** — Daily limits, business hours, whitelist/blacklist, account age minimums, warmup multipliers. `dry_run=true` is the default.
-- **🤖 Auto-Engagement** — `auto_like`, `auto_comment`, `auto_connect` with dry-run + warmup.
-- **📜 Audit Log** — 50-row scrollable table with action/status/date filters and a live SSE indicator.
-- **⚡ Real-time SSE** for live log streaming.
-
-**Stats:** 685 tests passing · 54 MCP tools · 21 web endpoints · 9 CLI commands · 11 web panels.
-
-See [CHANGELOG.md](CHANGELOG.md) for the full v2.0 entry.
+**[📚 Full documentation](https://horizonbymuneeb.github.io/linkedin-mcp-pro/)** · **[Quickstart](https://horizonbymuneeb.github.io/linkedin-mcp-pro/getting-started/quickstart/)** · **[API reference](https://horizonbymuneeb.github.io/linkedin-mcp-pro/reference/api/)** · **[MCP tools](https://horizonbymuneeb.github.io/linkedin-mcp-pro/reference/mcp-tools/)**
 
 ---
 
-## 🖼 UI Preview (11 Tailwind+Alpine panels)
+## What is it?
 
-All panels are static HTML served from `/static/{name}.html` — no build step required.
+**LinkedIn MCP Pro** is a [Model Context Protocol](https://modelcontextprotocol.io/) server that gives any AI agent a complete LinkedIn workflow:
 
-| # | Panel | File | Description |
-|---|---|---|---|
-| 1 | Dashboard | [`static/dashboard.html`](static/dashboard.html) | KPI overview, live activity feed, quick actions |
-| 2 | LLM Keys | [`static/llm.html`](static/llm.html) | 6 provider cards, add modal, masked key display, test connection |
-| 3 | Safety | [`static/safety.html`](static/safety.html) | Ban-safety gate: limits, hours, whitelist/blacklist, warmup |
-| 4 | Engagement | [`static/engagement.html`](static/engagement.html) | auto_like / auto_comment / auto_connect with dry-run |
-| 5 | Audit | [`static/audit.html`](static/audit.html) | 50-row scrollable table, action/status/date filters, live SSE |
-| 6 | Schedules | [`static/schedules.html`](static/schedules.html) | Cron-style post scheduler with preview |
-| 7 | Templates | [`static/templates.html`](static/templates.html) | Reusable post templates with variable substitution |
-| 8 | Drafts | [`static/drafts.html`](static/drafts.html) | Post drafts with autosave and publish-now |
-| 9 | Analytics | [`static/analytics.html`](static/analytics.html) | Impressions, reactions, profile views (charts) |
-| 10 | Install | [`static/install.html`](static/install.html) | One-click install for 6 agents |
-| 11 | Profile | [`static/profile.html`](static/profile.html) | Your LinkedIn profile snapshot |
+- ✍️ **Compose** posts (manual / AI / template)
+- 📅 **Schedule** posts via cron-like queue
+- 💬 **Engage** with comments, DMs, mentions
+- 🔍 **Search** jobs with match scoring + auto cover letter
+- 📊 **Analytics** with engagement heatmaps + A/B testing
+- 🛡 **Ban-safety gates** on every write path
 
-### Web UI features
-- 🌗 **Dark / light / system** theme (no flash, localStorage + OS preference)
-- 📱 **Mobile responsive** (1 / 2 / 3 column grids)
-- 🎨 **Gradient hero cards** (LinkedIn blue + accent colors)
-- 🔤 **Inter** font, smooth 200ms transitions
-- 📌 **Sticky top nav** with theme toggle
-- ⚡ **SSE** for live log + audit feed
-
-Screenshots are auto-generated — see [docs/SCREENSHOTS.md](docs/SCREENSHOTS.md).
+It ships with a unified **web dashboard** (15 pages) and **10 CLI commands**.
 
 ---
 
-## 🚀 Install
+## ⚡ Quick start
 
 ```bash
-# one-liner (recommended)
-curl -fsSL https://raw.githubusercontent.com/horizonbymuneeb/linkedin-mcp-pro/main/install.sh | bash
-# or from source
-git clone https://github.com/horizonbymuneeb/linkedin-mcp-pro
+# Install
+pipx install git+https://github.com/horizonbymuneeb/linkedin-mcp-pro.git@v2.3.2
+
+# Start dashboard
+linkedin-mcp-web --host 0.0.0.0 --port 8080
+
+# Or run as stdio MCP server for AI agents
+linkedin-mcp-pro serve
+```
+
+Open <http://localhost:8080> for the dashboard, or wire your agent:
+
+```bash
+linkedin-mcp-install add claude-desktop    # or cursor, cline, windsurf, zed, ...
+```
+
+Full guide: **[Quickstart](https://horizonbymuneeb.github.io/linkedin-mcp-pro/getting-started/quickstart/)**
+
+---
+
+## 📊 What's inside
+
+| Surface | Count |
+|---------|-------|
+| **MCP tools** | 54 (across 10 families) |
+| **REST endpoints** | 60+ |
+| **CLI commands** | 10 |
+| **Dashboard pages** | 15 (unified Linear+LinkedIn design system) |
+| **Tests** | 721 passing |
+
+---
+
+## 🖼 Dashboard preview
+
+The dashboard at `/` is a unified shell — same sidebar, topbar, design tokens across every page:
+
+- **Workspace**: Home, Drafts, Schedule, Engage, **Jobs**, Analytics
+- **Account**: Connect, Cookies, Profile
+- **Configure**: LLM, Safety, Audit, Install, Settings, Templates
+
+Design system: **Linear dark mode** (`#5e6ad2` accent) + **LinkedIn content cards** (`#0a66c2` brand).
+
+See [Dashboard tour](https://horizonbymuneeb.github.io/linkedin-mcp-pro/guides/dashboard/) for a walkthrough.
+
+---
+
+## 🤖 Agent support
+
+Works with any MCP host:
+
+- Claude Desktop (macOS / Linux / Windows)
+- Claude Code
+- Cursor
+- Cline (VS Code)
+- Continue.dev
+- Windsurf
+- Zed
+- Open WebUI
+- LibreChat
+- LobeChat
+
+Full setup: [Agent setup guide](https://horizonbymuneeb.github.io/linkedin-mcp-pro/getting-started/agents/)
+
+---
+
+## 🛡 Safety
+
+Every write path runs through a **ban-safety gate**:
+
+- Daily action caps (per-account configurable)
+- Velocity windows (no more than N actions per hour)
+- Content pattern checks (LinkedIn spam triggers blocked)
+- Duplicate detection (no identical posts within 7 days)
+- Rate-limit backoff when LinkedIn throttles
+
+The gate is **always on** — there is no `--unsafe` flag. See [safety.md](https://horizonbymuneeb.github.io/linkedin-mcp-pro/operations/safety/).
+
+---
+
+## 📦 What ships
+
+```
+linkedin-mcp-pro/
+├── linkedin_mcp/                # Core package
+│   ├── static/                  # 16 HTML pages + unified shell
+│   ├── jobs/                    # Jobs module (CV, search, apply, tracker)
+│   ├── tools/                   # 17 tool modules
+│   ├── cli*.py                  # 10 CLI entry points
+│   └── web.py                   # FastAPI server
+├── tests/                       # 721 tests
+├── scripts/
+│   └── e2e_test.py             # Full E2E smoke test (64 checks)
+├── docs/                        # MkDocs Material documentation
+├── mkdocs.yml                   # Docs build config
+├── install.sh / install.ps1     # One-line installers
+└── README.md                    # This file
+```
+
+---
+
+## 🧪 Development
+
+```bash
+git clone https://github.com/horizonbymuneeb/linkedin-mcp-pro.git
 cd linkedin-mcp-pro
 pip install -e .
-```
+pytest tests/                    # 721 tests
+python scripts/e2e_test.py       # E2E smoke (64 checks)
 
-Then run the install wizard:
-
-```bash
-linkedin-mcp-install doctor   # health check
-linkedin-mcp-install detect   # find installed agents
-linkedin-mcp-install add claude-desktop
-```
-
-Or use the full CLI:
-
-```bash
-linkedin-mcp --help
+# Build docs locally
+pip install mkdocs mkdocs-material pymdown-extensions
+mkdocs serve                     # → http://127.0.0.1:8000
 ```
 
 ---
 
-## 🧰 CLI
+## 📄 License
 
-```
-linkedin-mcp            # start the MCP server
-linkedin-mcp-install    # interactive install wizard
-  ├─ doctor             # health check (Python, profile, cookies, MCP, SOCKS, IP, LinkedIn login)
-  ├─ detect             # auto-detect installed agents
-  ├─ add <agent>        # register MCP server in agent config
-  ├─ remove <agent>     # clean uninstall
-  ├─ print-configs      # JSON snippets for manual paste
-  └─ verify <agent>     # confirm installation
-```
+MIT © [horizonbymuneeb](https://github.com/horizonbymuneeb)
 
-Supported agents: **Claude Desktop, Cursor, Continue, Cline, Windsurf, Codex**.
+See [LICENSE](LICENSE).
 
 ---
 
-## 🔌 MCP Tools (54 total)
+## 🔗 Links
 
-| Category | Tools |
-|---|---|
-| **Profile** | `get_profile`, `update_profile`, `get_profile_views` |
-| **Posts** | `create_post`, `delete_post`, `get_posts`, `repost`, `react_to_post` |
-| **Search** | `search_people`, `search_jobs`, `search_companies`, `search_posts` |
-| **Engagement** | `like_post`, `comment_on_post`, `send_connection_request`, `send_message` |
-| **Auto** | `auto_like`, `auto_comment`, `auto_connect` *(v1.1.0, dry-run + warmup)* |
-| **Analytics** | `get_post_analytics`, `get_profile_analytics`, `get_engagement_stats` |
-| **Schedules** | `schedule_post`, `list_schedules`, `cancel_schedule` |
-| **Templates** | `create_template`, `render_template`, `list_templates` |
-| **Drafts** | `save_draft`, `list_drafts`, `publish_draft` |
-| **Safety** | `get_safety_config`, `set_safety_config`, `check_action` |
-| **LLM** | `add_llm_key`, `list_llm_keys`, `test_llm_key`, `remove_llm_key` *(v1.1.0)* |
-| **Audit** | `get_audit_log`, `export_audit_log` |
-| **Misc** | login helpers, cookie refresh, proxy/SOCKS, health checks |
-
-See [`docs/MCP_TOOLS.md`](docs/MCP_TOOLS.md) for the full schema.
-
----
-
-## 🌐 Web Endpoints (21)
-
-```
-GET  /                       # landing / dashboard redirect
-GET  /static/{panel}.html    # 11 panels (Tailwind+Alpine, no build)
-GET  /api/llm/providers      # list configured LLM providers
-POST /api/llm/providers      # add a provider
-POST /api/llm/providers/{id}/test
-DELETE /api/llm/providers/{id}
-GET  /api/safety             # get safety config
-POST /api/safety             # update safety config
-GET  /api/audit              # 50-row audit feed
-GET  /api/audit/stream       # SSE live log
-GET  /api/engagement/{action}/dry-run
-POST /api/engagement/{action}
-GET  /api/posts, /api/drafts, /api/templates, /api/schedules
-GET  /api/profile, /api/analytics, /api/health
-```
-
----
-
-## 🛡 Safety & Security
-
-- **Voyager API is BANNED** for posting — we use only web scraping via Playwright.
-- Daily limits enforced, business hours respected, account age minimum 30 days.
-- 14-day warmup × 0.2x multiplier for new accounts.
-- `dry_run=true` is the default — opt in to live mode.
-
-See [SECURITY.md](SECURITY.md) for the full policy and how to report vulnerabilities.
-
----
-
-## 🧪 Testing
-
-```bash
-pip install -e .[test]
-pytest                 # 685 tests
-pytest --cov=linkedin_mcp
-```
-
----
-
-## 📜 License
-
-MIT © horizonbymuneeb
+- 📚 [Documentation](https://horizonbymuneeb.github.io/linkedin-mcp-pro/)
+- 🐛 [Issue tracker](https://github.com/horizonbymuneeb/linkedin-mcp-pro/issues)
+- 💬 [Discussions](https://github.com/horizonbymuneeb/linkedin-mcp-pro/discussions)
+- 🚀 [Releases](https://github.com/horizonbymuneeb/linkedin-mcp-pro/releases)

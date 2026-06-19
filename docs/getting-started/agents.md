@@ -20,7 +20,7 @@ installer ships with first-class support for the following agents.
 | LobeChat          | All           | `~/.lobe-chat/mcp.json`                                        | `linkedin-mcp-install add lobechat`              |
 
 You can also drive the installer over HTTP via the `/api/install/*` routes
-(see [INSTALL.md](INSTALL.md)).
+(see [INSTALL.md](install.md)).
 
 ---
 
