@@ -1176,52 +1176,57 @@ def dashboard() -> HTMLResponse:
 
 
 def _render_static(path: Path) -> str:
-    """Read a static HTML file, resolve {% include %} and inject page body
-    into the shell's PAGE_CONTENT marker.
+    """Read a static HTML file and render it inside the shared shell.
 
-    Flow:
-      1. Page = full HTML with {% include "_shell.html" %} placeholder
-      2. Replace {% include "_shell.html" %} with shell HTML (which has
-         a <!--__PAGE_CONTENT__--> marker inside its <main>)
-      3. Extract the page's own <body>...</body> content
-      4. Strip the page's redundant <main> wrappers (the shell provides one)
-      5. Replace <!--__PAGE_CONTENT__--> with that extracted content
-      6. Rewrite any /static/<page>.html sidebar links to clean /<page>
+    Pages (drafts, jobs, cookies, ...) are full HTML docs that include
+    the shell via `{% include "_shell.html" %}`. The shell is a partial
+    (no <html>/<body> wrappers) that provides sidebar + topbar.
+
+    Algorithm:
+      1. Read the page (full HTML with {% include %} placeholder).
+      2. Strip CDN <script src=...> tags from the page (shell provides
+         alpinejs + tailwindcss exactly once).
+      3. Extract the page's <body> INNER content. PRESERVE the body's
+         attributes (e.g. <body x-data="draftsPanel()">) — many pages
+         put their Alpine x-data on the <body> tag itself.
+      4. Read shell.html (partial with <!--__PAGE_CONTENT__--> marker).
+      5. Replace marker with the page's body inner content.
+      6. Rewrite sidebar/nav links /static/<page>.html → /<page>.
     """
     raw = path.read_text(encoding="utf-8")
 
-    # Step 1: resolve {% include %} (multi-pass for nested includes)
-    include_pat = re.compile(r'\{%\s*include\s+"([^"]+)"\s*%\}')
-    for _ in range(3):
-        raw = include_pat.sub(
-            lambda m: (_static_dir / m.group(1)).read_text(encoding="utf-8")
-            if (_static_dir / m.group(1)).exists()
-            else "",
-            raw,
-        )
-
-    # Step 2: extract the page's <body> content
-    body_match = re.search(r"<body[^>]*>(.*?)</body>", raw, re.DOTALL | re.IGNORECASE)
-    if body_match:
-        page_body = body_match.group(1)
-    else:
-        page_body = ""
-
-    # Step 3: strip the shell's empty <main>...</main> placeholder entirely.
-    # Pages already provide their own <main> wrapper, so the shell doesn't
-    # need to. Just remove the placeholder block from the rendered output.
-    placeholder_pat = re.compile(
-        r'<main[^>]*class="[^"]*ml-\[240px\][^"]*"[^>]*>\s*<!--__PAGE_CONTENT__-->\s*</main>',
-        re.IGNORECASE | re.DOTALL,
+    # Step 1: strip CDN library scripts (alpinejs, tailwindcss) —
+    # shell provides them exactly once.
+    raw = re.sub(
+        r'<script\b[^>]*\bsrc=[^>]*>',
+        '',
+        raw,
+        flags=re.IGNORECASE,
     )
-    body = raw
-    if placeholder_pat.search(body):
-        body = placeholder_pat.sub("", body)
-    else:
-        # Fallback: just replace the marker with empty string
-        body = body.replace("<!--__PAGE_CONTENT__-->", "")
 
-    # Step 5: rewrite sidebar/nav links to clean routes
+    # Step 2: extract the page's <body>...</body>. We PRESERVE the
+    # body's attributes (many pages put x-data on <body> itself).
+    body_match = re.search(r"<body([^>]*)>(.*?)</body>", raw, re.DOTALL | re.IGNORECASE)
+    if body_match:
+        body_attrs = body_match.group(1)  # e.g. ' x-data="draftsPanel()"'
+        body_inner = body_match.group(2)
+        page_inner = body_inner
+        # If body has x-data, wrap inner content in a div with the same
+        # x-data so Alpine still scopes it correctly when injected into
+        # the shell\'s <main>. (The shell\'s <body> is what wraps the
+        # full document, but the page\'s x-data needs its own scope.)
+        if "x-data=" in body_attrs:
+            page_inner = f"<div{body_attrs}>{body_inner}</div>"
+    else:
+        page_inner = raw
+
+    # Step 3: read the shell template (partial — no <html>/<body>).
+    shell_html = (_static_dir / "_shell.html").read_text(encoding="utf-8")
+
+    # Step 4: inject page content into the shell marker.
+    body = shell_html.replace("<!--__PAGE_CONTENT__-->", page_inner)
+
+    # Step 5: rewrite sidebar/nav links from /static/<page>.html → /<page>
     _LINK_PAGES = (
         "drafts", "schedules", "engagement", "jobs", "analytics",
         "connect", "cookies", "profile", "llm", "safety", "audit",
