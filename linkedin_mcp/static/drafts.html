@@ -57,6 +57,11 @@
     .li-editor i, .li-editor em { font-style: italic; }
     .li-editor u { text-decoration: underline; }
     /* Hashtag highlight */
+    /* Hashtag highlight (in editor AND in preview card) */
+    .tag { color: #0a66c2; font-weight: 500; }
+    .mention { color: #0a66c2; font-weight: 600; background: #0a66c212; padding: 0 3px; border-radius: 3px; }
+    .link { color: #0a66c2; text-decoration: underline; }
+    /* (legacy selectors kept for backward compat) */
     .li-editor .tag { color: #0a66c2; font-weight: 500; }
     .li-editor .mention { color: #0a66c2; font-weight: 600; background: #0a66c212; padding: 0 3px; border-radius: 3px; }
     .li-editor .link { color: #0a66c2; text-decoration: underline; }
@@ -474,7 +479,8 @@ function draftsPanel() {
     recentLoading: false,
     profile: { name: '', headline: '' },
     form: { topic: '', tone: 'professional', length: 150, hashtags: true, style: 'story' },
-    output: '',
+    editorContent: '',   // live text from contenteditable
+    editorHtml: '',      // live HTML for preview rendering
     recent: [],
     filteredRecent: [],
     searchQuery: '',
@@ -484,11 +490,9 @@ function draftsPanel() {
 
     // ==================== COMPUTED ====================
     get plainText() {
-      const el = this.$refs.editor;
-      if (!el) return '';
-      return (el.innerText || el.textContent || '').replace(/\u00A0/g, ' ').trim();
+      return (this.editorContent || '').replace(/\u00A0/g, ' ').trim();
     },
-    get charCount() { return this.plainText.length; },
+    get charCount() { return (this.editorContent || '').length; },
     get wordCount() {
       const t = this.plainText.trim();
       return t ? t.split(/\s+/).length : 0;
@@ -509,16 +513,13 @@ function draftsPanel() {
       return Math.max(1, Math.round(this.wordCount / 4));
     },
     get previewHtml() {
-      const el = this.$refs.editor;
-      if (!el) return '';
-      let html = el.innerHTML || '';
+      let html = this.editorHtml || '';
+      if (!html) return '';
       // LinkedIn-like: blank line → paragraph break
       html = html.replace(/<div><br><\/div>/g, '<br>').replace(/<div>/g, '<p>').replace(/<\/div>/g, '</p>');
-      // Auto-link hashtags and mentions if not already wrapped
+      // Auto-link hashtags and mentions in raw text nodes
       const tmp = document.createElement('div');
       tmp.innerHTML = html;
-      tmp.querySelectorAll('span.tag, span.mention').forEach(s => s.classList.add('kept'));
-      // Wrap loose # and @ in text nodes
       const walker = document.createTreeWalker(tmp, NodeFilter.SHOW_TEXT, null, false);
       const nodes = [];
       while (walker.nextNode()) nodes.push(walker.currentNode);
@@ -543,10 +544,12 @@ function draftsPanel() {
         document.documentElement.classList.toggle('dark', v);
         localStorage.setItem('theme', v ? 'dark' : 'light');
       });
-      this.$watch('plainText', () => { this._autoSave(); });
+      this.$watch('editorContent', () => { this._autoSave(); });
       await this.loadProfile();
       await this.loadRecent();
       this._loadLocal();
+      // ensure state reflects current editor content
+      this.onEditorInput();
     },
 
     async loadProfile() {
@@ -593,7 +596,11 @@ function draftsPanel() {
       this.$refs.editor.dispatchEvent(new Event('input'));
     },
     onEditorInput(e) {
-      // noop, watcher handles it
+      const el = this.$refs.editor;
+      if (el) {
+        this.editorContent = el.innerText || el.textContent || '';
+        this.editorHtml = el.innerHTML || '';
+      }
     },
     onPaste(e) {
       e.preventDefault();
@@ -631,7 +638,10 @@ function draftsPanel() {
     },
     setEditor(html) {
       // Set HTML, preserving line breaks
-      this.$refs.editor.innerHTML = html.replace(/\n/g, '<br>');
+      const out = (html || '').replace(/\n/g, '<br>');
+      this.$refs.editor.innerHTML = out;
+      this.editorContent = this.$refs.editor.innerText || '';
+      this.editorHtml = out;
       this.$refs.editor.dispatchEvent(new Event('input'));
     },
 
@@ -797,6 +807,8 @@ function draftsPanel() {
         const d = JSON.parse(raw);
         if (Date.now() - d.ts > 7 * 24 * 3600 * 1000) return; // 1 week
         this.$refs.editor.innerHTML = d.html || '';
+        this.editorContent = this.$refs.editor.innerText || '';
+        this.editorHtml = d.html || '';
         this.form.topic = d.topic || '';
         this.$refs.editor.dispatchEvent(new Event('input'));
       } catch (e) {}
