@@ -1176,30 +1176,52 @@ def dashboard() -> HTMLResponse:
 
 
 def _render_static(path: Path) -> str:
-    """Read a static HTML file and resolve {% include "name.html" %} placeholders.
+    """Read a static HTML file, resolve {% include %} and inject page body
+    into the shell's PAGE_CONTENT marker.
 
-    We avoid pulling Jinja into the project for what is currently a single
-    include (the app shell). Supports up to 2 levels of nesting so a page
-    can include _shell.html which itself includes nothing.
+    Flow:
+      1. Page = full HTML with {% include "_shell.html" %} placeholder
+      2. Replace {% include "_shell.html" %} with shell HTML (which has
+         a <!--__PAGE_CONTENT__--> marker inside its <main>)
+      3. Extract the page's own <body>...</body> content
+      4. Strip the page's redundant <main> wrappers (the shell provides one)
+      5. Replace <!--__PAGE_CONTENT__--> with that extracted content
+      6. Rewrite any /static/<page>.html sidebar links to clean /<page>
     """
-    body = path.read_text(encoding="utf-8")
-    pattern = re.compile(r'\{%\s*include\s+"([^"]+)"\s*%\}')
+    raw = path.read_text(encoding="utf-8")
 
-    def _resolve(match: re.Match) -> str:
-        include_name = match.group(1)
-        include_path = _static_dir / include_name
-        if not include_path.exists():
-            return ""
-        return include_path.read_text(encoding="utf-8")
+    # Step 1: resolve {% include %} (multi-pass for nested includes)
+    include_pat = re.compile(r'\{%\s*include\s+"([^"]+)"\s*%\}')
+    for _ in range(3):
+        raw = include_pat.sub(
+            lambda m: (_static_dir / m.group(1)).read_text(encoding="utf-8")
+            if (_static_dir / m.group(1)).exists()
+            else "",
+            raw,
+        )
 
-    # Two passes so nested includes (if any) also resolve.
-    body = pattern.sub(_resolve, body)
-    body = pattern.sub(_resolve, body)
+    # Step 2: extract the page's <body> content
+    body_match = re.search(r"<body[^>]*>(.*?)</body>", raw, re.DOTALL | re.IGNORECASE)
+    if body_match:
+        page_body = body_match.group(1)
+    else:
+        page_body = ""
 
-    # Rewrite sidebar/nav links that reference the dev path "/static/<page>.html"
-    # to the clean production path "/<page>" so they don't 404 when served
-    # through this renderer. Without this, clicking a sidebar link shows a
-    # blank un-styled page (browser falls back to raw HTML for 404 routes).
+    # Step 3: strip the shell's empty <main>...</main> placeholder entirely.
+    # Pages already provide their own <main> wrapper, so the shell doesn't
+    # need to. Just remove the placeholder block from the rendered output.
+    placeholder_pat = re.compile(
+        r'<main[^>]*class="[^"]*ml-\[240px\][^"]*"[^>]*>\s*<!--__PAGE_CONTENT__-->\s*</main>',
+        re.IGNORECASE | re.DOTALL,
+    )
+    body = raw
+    if placeholder_pat.search(body):
+        body = placeholder_pat.sub("", body)
+    else:
+        # Fallback: just replace the marker with empty string
+        body = body.replace("<!--__PAGE_CONTENT__-->", "")
+
+    # Step 5: rewrite sidebar/nav links to clean routes
     _LINK_PAGES = (
         "drafts", "schedules", "engagement", "jobs", "analytics",
         "connect", "cookies", "profile", "llm", "safety", "audit",
