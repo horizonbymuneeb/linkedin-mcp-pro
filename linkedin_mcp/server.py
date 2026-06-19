@@ -799,6 +799,47 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    # =================== LLM KEY MANAGEMENT (v1.2.0) ===================
+    {
+        "name": "llm_list_providers",
+        "description": "List all configured LLM providers with status (masked keys, last test result).",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "llm_add_key",
+        "description": "Add or update an LLM API key.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "provider": {"type": "string"},
+                "key": {"type": "string"},
+                "base_url": {"type": "string"},
+                "model": {"type": "string"},
+            },
+            "required": ["provider"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "llm_remove_key",
+        "description": "Remove an LLM provider's stored key.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"provider": {"type": "string"}},
+            "required": ["provider"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "llm_test_key",
+        "description": "Test if a provider's key works (1-token ping).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {"provider": {"type": "string"}},
+            "required": ["provider"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -1291,6 +1332,25 @@ async def _dispatch_v1_1(name: str, args: dict) -> Any:
             tone=args.get("tone", "thought-leadership"),
         )
     raise ValueError(f"Unknown v1.1 tool: {name}")
+
+
+def _dispatch_llm(name: str, args: dict[str, Any]) -> dict[str, Any]:
+    """Dispatcher for LLM key management tools (v1.2.0)."""
+    from .llm_keys import add_provider, list_providers, remove_provider, check_provider
+    if name == "llm_list_providers":
+        return {"providers": list_providers()}
+    if name == "llm_add_key":
+        return add_provider(
+            name=args["provider"],
+            key=args.get("key"),
+            base_url=args.get("base_url"),
+            model=args.get("model"),
+        )
+    if name == "llm_remove_key":
+        return {"removed": remove_provider(args["provider"])}
+    if name == "llm_test_key":
+        return check_provider(args["provider"])
+    return {"error": f"unknown llm tool: {name}"}
 
 
 # ----------------------------------------------------------------------------

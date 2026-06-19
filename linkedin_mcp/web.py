@@ -43,6 +43,11 @@ app = FastAPI(
     version="1.1.0",
 )
 app.include_router(cookies_router)
+try:
+    from .llm_router import router as llm_router
+    app.include_router(llm_router)
+except Exception as _e:  # noqa: BLE001
+    log.warning("llm_router not loaded: %s", _e)
 
 # Serve static files (cookies panel, etc.)
 _static_dir = Path(__file__).parent / "static"
