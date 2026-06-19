@@ -33,7 +33,7 @@ def _profile_dir() -> Path:
 
 def _gate():
     """Build a SafetyGate from the active profile."""
-    from .ban_safety import build_default_gate
+    from linkedin_mcp.ban_safety import build_default_gate
     return build_default_gate(_profile_dir())
 
 
@@ -80,7 +80,7 @@ def set_safety_config(**kwargs: Any) -> dict[str, Any]:
     e.g. business_hours_start. For list fields (whitelist, blacklist),
     pass a list.
     """
-    from .ban_safety import SafetyConfig
+    from linkedin_mcp.ban_safety import SafetyConfig
     pd = _profile_dir()
     cfg = SafetyConfig.load(pd / "safety_config.json")
     data = cfg.to_dict()

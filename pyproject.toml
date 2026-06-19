@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "linkedin-mcp-pro"
-version = "1.0.0"
+version = "1.1.0"
 description = "Open-source MCP server for LinkedIn — profiles, search, jobs, posts, connections, messages. Self-hosted, ban-safe, MIT licensed."
 readme = "README.md"
 license = {text = "MIT"}
