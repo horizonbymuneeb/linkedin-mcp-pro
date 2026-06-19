@@ -1195,6 +1195,20 @@ def _render_static(path: Path) -> str:
     # Two passes so nested includes (if any) also resolve.
     body = pattern.sub(_resolve, body)
     body = pattern.sub(_resolve, body)
+
+    # Rewrite sidebar/nav links that reference the dev path "/static/<page>.html"
+    # to the clean production path "/<page>" so they don't 404 when served
+    # through this renderer. Without this, clicking a sidebar link shows a
+    # blank un-styled page (browser falls back to raw HTML for 404 routes).
+    _LINK_PAGES = (
+        "drafts", "schedules", "engagement", "jobs", "analytics",
+        "connect", "cookies", "profile", "llm", "safety", "audit",
+        "install", "settings", "templates",
+    )
+    for _p in _LINK_PAGES:
+        body = body.replace(f'href="/static/{_p}.html"', f'href="/{_p}"')
+    body = body.replace('href="/static/index.html"', 'href="/"')
+
     return body
 
 
