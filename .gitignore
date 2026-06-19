@@ -65,3 +65,8 @@ playwright-report/
 .env.bak
 *.bak
 scripts/__pycache__/
+
+# Internal planning files (NEVER commit)
+.planning/
+PLAN*.md
+ROADMAP_PRIVATE*.md
