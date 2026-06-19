@@ -5,71 +5,279 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cookies & Login · linkedin-mcp-pro</title>
   {% include "_shell.html" %}
+  <style>
+    /* ── Redesigned Cookies page ─────────────────────────── */
+    .cookies-hero {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 24px;
+      align-items: center;
+      padding: 24px;
+      background: linear-gradient(135deg, var(--surface-card) 0%, var(--surface-subtle) 100%);
+      border: 1px solid var(--border-default);
+      border-radius: 14px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    .cookies-hero::before {
+      content: "";
+      position: absolute;
+      top: -50%; right: -10%;
+      width: 300px; height: 300px;
+      background: radial-gradient(circle, rgba(99,102,241,0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .cookies-hero .status-icon { font-size: 64px; line-height: 1; filter: drop-shadow(0 4px 12px rgba(0,0,0,0.2)); }
+    .cookies-hero h1 { margin: 0 0 4px 0; font-size: 28px; font-weight: 700; color: var(--fg-primary); }
+    .cookies-hero .sub { margin: 0; color: var(--fg-secondary); font-size: 14px; }
+    .cookies-hero .meta { display: flex; gap: 16px; margin-top: 12px; flex-wrap: wrap; }
+    .cookies-hero .meta-item { font-size: 12px; color: var(--fg-tertiary); }
+    .cookies-hero .meta-item strong { color: var(--fg-secondary); font-weight: 600; }
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 4px 12px; border-radius: 999px;
+      font-size: 12px; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .status-badge.ok { background: rgba(16,185,129,0.15); color: #10b981; border: 1px solid rgba(16,185,129,0.3); }
+    .status-badge.warn { background: rgba(245,158,11,0.15); color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); }
+    .status-badge.alert { background: rgba(239,68,68,0.15); color: #ef4444; border: 1px solid rgba(239,68,68,0.3); }
+    .status-badge .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; box-shadow: 0 0 8px currentColor; }
+    /* Tab picker */
+    .tab-bar { display: flex; gap: 4px; padding: 4px; background: var(--surface-subtle); border-radius: 10px; margin-bottom: 16px; }
+    .tab-bar button { flex: 1; padding: 10px 16px; background: transparent; border: none; border-radius: 8px; color: var(--fg-secondary); font-weight: 500; cursor: pointer; transition: all 0.2s; }
+    .tab-bar button:hover { color: var(--fg-primary); }
+    .tab-bar button.active { background: var(--surface-card); color: var(--fg-primary); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+    .tab-bar button .icon { display: block; font-size: 20px; margin-bottom: 4px; }
+    .tab-bar button small { display: block; font-size: 11px; opacity: 0.7; font-weight: 400; }
+    .tab-panel { display: none; padding: 20px; }
+    .tab-panel.active { display: block; }
+    /* Why-not-logged-in explainer */
+    .error-explainer {
+      background: rgba(239,68,68,0.08);
+      border-left: 3px solid #ef4444;
+      border-radius: 0 8px 8px 0;
+      padding: 16px 20px;
+      margin-bottom: 16px;
+    }
+    .error-explainer h4 { margin: 0 0 8px 0; color: #ef4444; font-size: 14px; font-weight: 600; }
+    .error-explainer p { margin: 4px 0; color: var(--fg-secondary); font-size: 13px; line-height: 1.5; }
+    .error-explainer code { background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
+    .error-explainer ol { margin: 8px 0; padding-left: 20px; color: var(--fg-secondary); font-size: 13px; }
+    .error-explainer ol li { margin: 4px 0; }
+    /* Cookie search */
+    .cookie-search {
+      display: flex; gap: 8px; align-items: center;
+      padding: 12px;
+      background: var(--surface-subtle);
+      border-radius: 10px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+    .cookie-search input[type="text"] {
+      flex: 1; min-width: 200px;
+      padding: 8px 12px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      color: var(--fg-primary);
+      font-size: 14px;
+    }
+    .cookie-search input[type="text"]:focus { outline: 2px solid #6366f1; outline-offset: -1px; }
+    .filter-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .filter-chip {
+      padding: 4px 10px; border-radius: 999px;
+      background: var(--surface-card);
+      border: 1px solid var(--border-default);
+      color: var(--fg-secondary);
+      font-size: 11px; font-weight: 500;
+      cursor: pointer; transition: all 0.15s;
+      user-select: none;
+    }
+    .filter-chip:hover { color: var(--fg-primary); }
+    .filter-chip.active { background: #6366f1; color: white; border-color: #6366f1; }
+    /* Cookie table enhanced */
+    .cookie-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .cookie-table th { text-align: left; padding: 10px 12px; background: var(--surface-subtle); color: var(--fg-tertiary); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600; border-bottom: 1px solid var(--border-default); position: sticky; top: 0; z-index: 1; }
+    .cookie-table td { padding: 10px 12px; border-bottom: 1px solid var(--border-default); color: var(--fg-primary); }
+    .cookie-table tr:hover td { background: var(--surface-subtle); }
+    .cookie-table tr.auth-row td { background: rgba(99,102,241,0.05); }
+    .cookie-table tr.auth-row:hover td { background: rgba(99,102,241,0.1); }
+    .cookie-table tr.expired-row td { opacity: 0.5; }
+    .cookie-table code { font-size: 12px; color: var(--fg-secondary); }
+    .cookie-table .val-cell { font-family: ui-monospace, monospace; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cookie-table .val-cell code { color: var(--fg-tertiary); }
+    .table-wrap { max-height: 480px; overflow-y: auto; border: 1px solid var(--border-default); border-radius: 8px; }
+    .table-wrap::-webkit-scrollbar { width: 8px; }
+    .table-wrap::-webkit-scrollbar-thumb { background: var(--border-default); border-radius: 4px; }
+    /* Action buttons */
+    .action-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+    .action-bar .spacer { flex: 1; }
+    .verify-pulse { animation: pulse-green 2s ease-in-out infinite; }
+    @keyframes pulse-green { 0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); } 50% { box-shadow: 0 0 0 8px rgba(16,185,129,0); } }
+    /* Timeline */
+    .timeline { display: flex; gap: 0; margin-top: 16px; padding: 12px; background: var(--surface-subtle); border-radius: 8px; }
+    .timeline-item { flex: 1; text-align: center; position: relative; }
+    .timeline-item::after { content: "→"; position: absolute; right: -8px; top: 50%; transform: translateY(-50%); color: var(--fg-tertiary); }
+    .timeline-item:last-child::after { display: none; }
+    .timeline-item .time { font-size: 11px; color: var(--fg-tertiary); }
+    .timeline-item .label { font-size: 13px; font-weight: 600; color: var(--fg-primary); }
+    .timeline-item.ok .label { color: #10b981; }
+    .timeline-item.warn .label { color: #f59e0b; }
+    .timeline-item.alert .label { color: #ef4444; }
+    /* Status panels */
+    #login-status, #li-at-status, #import-status { margin-top: 12px; padding: 12px; border-radius: 8px; font-size: 13px; }
+    #login-status:empty, #li-at-status:empty, #import-status:empty { display: none; }
+    /* Responsive */
+    @media (max-width: 640px) {
+      .cookies-hero { grid-template-columns: 1fr; text-align: center; }
+      .cookies-hero .status-icon { font-size: 48px; }
+      .tab-bar { flex-direction: column; }
+      .cookie-search { flex-direction: column; align-items: stretch; }
+    }
+  </style>
 </head>
 <body>
 <main class="pt-14 min-h-screen md:ml-[240px]">
-    <div class="max-w-6xl mx-auto px-6 py-8">
+  <div class="max-w-6xl mx-auto px-6 py-8">
 
-<a href="/" role="button" class="secondary" style="float:right">← Dashboard</a>
-<h1>🔐 Cookies & Login</h1>
-<p class="sub">Manage your LinkedIn session. 3 ways to authenticate: (1) browser login, (2) paste <code>li_at</code>, (3) import full cookie JSON.</p>
-
-<!-- ════════ HEALTH ════════ -->
-<h2>🩺 Session health</h2>
-<div class="card" id="health">checking…</div>
-
-<!-- ════════ LOGIN ACTIONS ════════ -->
-<h2>🚀 Login / Refresh</h2>
-<div class="card">
-  <div class="grid">
-    <div>
-      <strong>Option A: Browser login</strong>
-      <p class="sub">Opens Chromium on this server. Best when you have VNC/SSH-X11 access. Otherwise use Option B.</p>
-      <button id="login-headed" onclick="loginHeaded()">▶ Login (headed)</button>
-      <button class="secondary" id="login-headless" onclick="loginHeadless()">👻 Login (headless)</button>
-      <button class="danger" id="login-cancel" onclick="loginCancel()" disabled>⏹ Cancel</button>
-      <div id="login-status" style="margin-top:8px"></div>
+    <!-- ════════ HERO STATUS ════════ -->
+    <div class="cookies-hero" id="hero">
+      <div>
+        <h1>🔐 Cookies &amp; Login</h1>
+        <p class="sub">Manage your LinkedIn session. Pick a method below to authenticate.</p>
+        <div class="meta" id="hero-meta">
+          <span class="meta-item">Checking…</span>
+        </div>
+        <div class="timeline" id="timeline" style="display:none">
+          <div class="timeline-item" id="tl-saved">
+            <div class="label">—</div>
+            <div class="time">last saved</div>
+          </div>
+          <div class="timeline-item" id="tl-verified">
+            <div class="label">—</div>
+            <div class="time">last verified</div>
+          </div>
+          <div class="timeline-item" id="tl-failed">
+            <div class="label">—</div>
+            <div class="time">last failed</div>
+          </div>
+        </div>
+      </div>
+      <div style="text-align:center">
+        <div class="status-icon" id="hero-icon">⏳</div>
+        <div class="status-badge" id="hero-badge"><span class="dot"></span>checking</div>
+      </div>
     </div>
-    <div>
-      <strong>Option B: Paste li_at cookie</strong>
-      <p class="sub">Open <a href="https://www.linkedin.com" target="_blank">LinkedIn</a> in your browser, press F12 → Application → Cookies → copy <code>li_at</code> value, paste below.</p>
-      <input id="li-at-input" type="password" placeholder="AQEDAS27ghk..." style="width:100%"/>
-      <button onclick="setLiAt()" style="margin-top:6px">💾 Save & Test</button>
-      <div id="li-at-status" style="margin-top:8px"></div>
+
+    <!-- ════════ ERROR EXPLAINER (only when not logged in) ════════ -->
+    <div class="error-explainer" id="error-explainer" style="display:none">
+      <h4 id="error-title">⚠ Not logged in</h4>
+      <p id="error-reason">The saved <code>li_at</code> cookie was rejected by LinkedIn's session validator.</p>
+      <details>
+        <summary style="cursor:pointer;color:var(--fg-secondary);font-size:12px;margin-top:8px">Why does this happen?</summary>
+        <ol>
+          <li>Your <code>li_at</code> token expired (LinkedIn rotates them every ~30 days).</li>
+          <li>You copied it from a browser tab where you weren't actually logged in.</li>
+          <li>You copied the wrong cookie name (e.g. <code>JSESSIONID</code> instead of <code>li_at</code>).</li>
+          <li>LinkedIn flagged your IP / fingerprint after suspicious activity.</li>
+        </ol>
+      </details>
+      <p style="margin-top:12px"><strong>Quick fix:</strong> Click <strong>🚀 Browser login</strong> below — a real Chromium will open, log in normally, and auto-save all 35 cookies including a fresh <code>li_at</code> + <code>JSESSIONID</code> pair.</p>
     </div>
+
+    <!-- ════════ AUTH METHOD PICKER ════════ -->
+    <h2 style="margin-top:0">🚀 Sign in</h2>
+    <div class="tab-bar" role="tablist">
+      <button class="active" data-tab="browser" role="tab">
+        <span class="icon">🖥️</span>Browser login<small>recommended · auto-saves all 35 cookies</small>
+      </button>
+      <button data-tab="liat" role="tab">
+        <span class="icon">📋</span>Paste li_at<small>fast · manual · may miss JSESSIONID</small>
+      </button>
+      <button data-tab="json" role="tab">
+        <span class="icon">📥</span>Import JSON<small>advanced · use EditThisCookie extension</small>
+      </button>
+    </div>
+
+    <div class="card">
+      <!-- Tab: Browser login -->
+      <div class="tab-panel active" id="tab-browser" role="tabpanel">
+        <p style="margin:0 0 16px 0;color:var(--fg-secondary)">Opens a real Chromium browser on this server. You log in to LinkedIn normally (email + password + 2FA). When login succeeds, all 35 cookies — <code>li_at</code>, <code>JSESSIONID</code>, <code>bcookie</code>, etc. — are extracted and saved automatically.</p>
+        <div class="action-bar">
+          <button id="login-headed" onclick="loginHeaded()">▶ Login (headed)</button>
+          <button class="secondary" id="login-headless" onclick="loginHeadless()">👻 Login (headless)</button>
+          <button class="danger" id="login-cancel" onclick="loginCancel()" disabled>⏹ Cancel</button>
+          <span class="spacer"></span>
+          <small style="color:var(--fg-tertiary)">Headed = visible window · Headless = background</small>
+        </div>
+        <div id="login-status"></div>
+      </div>
+
+      <!-- Tab: Paste li_at -->
+      <div class="tab-panel" id="tab-liat" role="tabpanel">
+        <p style="margin:0 0 12px 0;color:var(--fg-secondary)">Quick method: open <a href="https://www.linkedin.com" target="_blank">LinkedIn</a> in any browser where you're logged in, then:</p>
+        <ol style="margin:0 0 16px 0;color:var(--fg-secondary);font-size:13px;padding-left:20px">
+          <li>Press <code>F12</code> → <strong>Application</strong> tab</li>
+          <li>Left sidebar: <strong>Cookies</strong> → <code>https://www.linkedin.com</code></li>
+          <li>Find row named <code>li_at</code> → click its <strong>Value</strong> → <code>Ctrl+C</code></li>
+          <li>Paste below → <strong>Save &amp; Test</strong></li>
+        </ol>
+        <input id="li-at-input" type="password" placeholder="AQEDAS27ghk..." style="width:100%;padding:10px;font-family:ui-monospace,monospace"/>
+        <div class="action-bar">
+          <button onclick="setLiAt()">💾 Save &amp; Test</button>
+          <button class="secondary" onclick="document.getElementById('li-at-input').value='';document.getElementById('li-at-input').type='text'">👁 Show</button>
+          <span class="spacer"></span>
+          <small style="color:var(--fg-tertiary)" id="li-at-hint">Token should be 140-200 chars starting with <code>AQEDA</code></small>
+        </div>
+        <div id="li-at-status"></div>
+      </div>
+
+      <!-- Tab: Import JSON -->
+      <div class="tab-panel" id="tab-json" role="tabpanel">
+        <p style="margin:0 0 12px 0;color:var(--fg-secondary)">Export cookies from your browser using the <strong>EditThisCookie</strong> or <strong>Cookie-Editor</strong> extension, then paste the JSON array below.</p>
+        <textarea id="import-input" rows="6" style="width:100%;font-family:ui-monospace,monospace;font-size:12px" placeholder='[{"name":"li_at","value":"AQEDAS27...","domain":".linkedin.com","path":"/","expires":-1,"httpOnly":true,"secure":true,"sameSite":"None"}]'></textarea>
+        <div class="action-bar">
+          <button onclick="importCookies()">📥 Import &amp; verify</button>
+          <span class="spacer"></span>
+          <small style="color:var(--fg-tertiary)">Must include <code>li_at</code>. JSESSIONID strongly recommended.</small>
+        </div>
+        <div id="import-status"></div>
+      </div>
+    </div>
+
+    <!-- ════════ COOKIE INVENTORY ════════ -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:32px;flex-wrap:wrap;gap:12px">
+      <h2 style="margin:0">🍪 Cookie inventory <span id="cookie-count" class="pill">0</span></h2>
+      <div class="action-bar" style="margin:0">
+        <button class="secondary" onclick="loadCookies();loadHealth()">🔄 Refresh</button>
+        <button class="secondary" onclick="verifyNow()">🧪 Re-verify session</button>
+      </div>
+    </div>
+    <div class="card" id="cookie-list">loading…</div>
+
+    <!-- ════════ RAW JSON (collapsed) ════════ -->
+    <details style="margin-top:16px">
+      <summary style="cursor:pointer;color:var(--fg-secondary);font-size:13px">📋 Raw JSON (storage_state.json)</summary>
+      <pre id="raw-json" style="max-height:300px;overflow:auto;background:var(--surface-subtle);padding:12px;border-radius:8px;font-size:11px">loading…</pre>
+    </details>
+
   </div>
-  <div style="margin-top:16px">
-    <strong>Option C: Import full cookie JSON</strong>
-    <p class="sub">Export from EditThisCookie / Cookie-Editor browser extension. Must contain <code>li_at</code>.</p>
-    <textarea id="import-input" placeholder='[{"name":"li_at","value":"AQEDAS27...","domain":".linkedin.com","path":"/","expires":-1,"httpOnly":true,"secure":true,"sameSite":"None"}]'></textarea>
-    <button onclick="importCookies()" style="margin-top:6px">📥 Import</button>
-    <div id="import-status" style="margin-top:8px"></div>
-  </div>
-</div>
-
-<!-- ════════ COOKIE INVENTORY ════════ -->
-<h2>🍪 Cookie inventory <span id="cookie-count" class="pill">0</span></h2>
-<div class="card" id="cookie-list">loading…</div>
-
-<details>
-  <summary>📋 Raw JSON (storage_state.json)</summary>
-  <pre id="raw-json">loading…</pre>
-</details>
-
-<!-- ════════ INSTALL / SETUP ════════ -->
-<h2>📦 Get cookies manually (no browser needed)</h2>
-<div class="card">
-  <ol>
-    <li>Open <a href="https://www.linkedin.com/feed/" target="_blank">linkedin.com/feed</a> in any browser (your laptop is fine).</li>
-    <li>Log in normally with email + password + 2FA.</li>
-    <li>Press <code>F12</code> → open <strong>Application</strong> tab → <strong>Cookies</strong> → click <code>https://www.linkedin.com</code>.</li>
-    <li>Find the <code>li_at</code> row → double-click its value → <code>Ctrl+C</code>.</li>
-    <li>Paste into "Option B" above → click "Save & Test".</li>
-  </ol>
-  <p class="sub">✅ No browser automation needed, no Playwright required, works from any country.</p>
-</div>
+</main>
 
 <script>
+// ── Tab switcher ────────────────────────────────────
+document.querySelectorAll('.tab-bar button').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.tab-bar button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    document.getElementById('tab-' + btn.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Helpers ─────────────────────────────────────────
 async function jget(url) {
   const r = await fetch(url);
   if (!r.ok) throw new Error(await r.text());
@@ -81,133 +289,238 @@ async function jpost(url, body) {
   try { return JSON.parse(text); }
   catch { throw new Error(text); }
 }
-function esc(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-}
+
+// ── Reload hero + health ────────────────────────────
 async function loadHealth() {
   try {
     const h = await jget('/api/profile/health');
     const ok = h.overall_ok;
-    const cls = ok ? 'ok' : 'alert';
-    const el = document.getElementById('health');
-    el.textContent = '';
-    const span = document.createElement('span');
-    span.className = cls;
-    span.style.fontSize = '18px';
-    span.textContent = ok ? '✓ LOGGED IN' : '✗ NOT LOGGED IN';
-    el.appendChild(span);
-    const stats = document.createElement('div');
-    stats.style.marginTop = '12px';
-    for (const [k, label] of [[h.cookie_count, 'cookies'], [h.storage_state_age_days, 'days old'], [h.linkedin_http_status, 'HTTP status'], [(h.linkedin_elapsed_ms ?? 0) + 'ms', 'latency']]) {
-      const d = document.createElement('div');
-      d.className = 'stat';
-      const v = document.createElement('strong');
-      v.textContent = k;
-      const s = document.createElement('span');
-      s.textContent = label;
-      d.appendChild(v); d.appendChild(s);
-      stats.appendChild(d);
+    const icon = document.getElementById('hero-icon');
+    const badge = document.getElementById('hero-badge');
+    const explainer = document.getElementById('error-explainer');
+    if (ok) {
+      icon.textContent = '✅';
+      badge.className = 'status-badge ok';
+      badge.innerHTML = '<span class="dot"></span>logged in';
+      explainer.style.display = 'none';
+    } else {
+      icon.textContent = '❌';
+      badge.className = 'status-badge alert';
+      badge.innerHTML = '<span class="dot"></span>not logged in';
+      // Show error explainer
+      explainer.style.display = 'block';
+      const reason = h.last_error || `HTTP ${h.linkedin_http_status}`;
+      document.getElementById('error-reason').innerHTML =
+        `The saved <code>li_at</code> was rejected by LinkedIn. ` +
+        `Server reported: <code>${reason}</code>. ` +
+        `Cookie file is <strong>${h.cookie_count}</strong> cookies, last saved <strong>${h.storage_state_age_days?.toFixed(2) || '?'} days ago</strong>.`;
     }
-    el.appendChild(stats);
-    const det = document.createElement('details');
-    det.style.marginTop = '12px';
-    const sum = document.createElement('summary');
-    sum.textContent = 'raw';
-    const pre = document.createElement('pre');
-    pre.textContent = JSON.stringify(h, null, 2);
-    det.appendChild(sum); det.appendChild(pre);
-    el.appendChild(det);
+    // Hero meta
+    const meta = document.getElementById('hero-meta');
+    meta.innerHTML = '';
+    const items = [
+      [`${h.cookie_count}`, 'cookies stored'],
+      [`${h.storage_state_age_days?.toFixed(2) ?? '?'}d`, 'age'],
+      [`HTTP ${h.linkedin_http_status}`, 'status'],
+      [`${h.linkedin_elapsed_ms ?? 0}ms`, 'latency'],
+    ];
+    for (const [val, label] of items) {
+      const s = document.createElement('span');
+      s.className = 'meta-item';
+      s.innerHTML = `<strong>${val}</strong> · ${label}`;
+      meta.appendChild(s);
+    }
+    // Timeline
+    const tl = document.getElementById('timeline');
+    if (h.timeline) {
+      tl.style.display = 'flex';
+      setTl('tl-saved', h.timeline.last_saved, ok ? 'ok' : 'warn');
+      setTl('tl-verified', h.timeline.last_verified, ok ? 'ok' : 'alert');
+      setTl('tl-failed', h.timeline.last_failed, h.timeline.last_failed ? 'alert' : 'ok');
+    }
   } catch (e) {
-    const el = document.getElementById('health');
-    el.textContent = '';
-    const span = document.createElement('span');
-    span.className = 'alert';
-    span.textContent = e.message || 'load failed';
-    el.appendChild(span);
+    document.getElementById('hero-icon').textContent = '⚠️';
+    document.getElementById('hero-badge').innerHTML = '<span class="dot"></span>load failed';
   }
 }
+function setTl(id, val, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.querySelector('.label').textContent = val || '—';
+  el.className = 'timeline-item ' + cls;
+}
 
+// ── Cookie table with search + filters ──────────────
+let _allCookies = [];
+let _activeFilters = new Set();
 async function loadCookies() {
   try {
     const c = await jget('/api/cookies');
-    document.getElementById('cookie-count').textContent = c.count + ' cookies · ' + c.domains.length + ' domains';
-
-    // li_at file card
-    const li = c.li_at_file;
-    const st = c.storage_state;
-    const consistency = c.consistency;
-    const consCls = consistency === 'match' ? 'ok' : 'warn';
-
-    // Cookie table
-    const tbody = document.createElement('tbody');
-    for (const ck of c.cookies) {
-      const tr = document.createElement('tr');
-      const tdi = document.createElement('td');
-      if (ck._is_auth) { const sp = document.createElement('span'); sp.className = 'pill'; sp.textContent = '⭐AUTH'; tdi.appendChild(sp); }
-      if (ck.secure) tdi.appendChild(document.createTextNode('🔒'));
-      if (ck.httpOnly) tdi.appendChild(document.createTextNode('🚫JS'));
-      tr.appendChild(tdi);
-      const tdn = document.createElement('td'); const cn = document.createElement('code'); cn.textContent = ck.name || ''; tdn.appendChild(cn); tr.appendChild(tdn);
-      const tdv = document.createElement('td'); const cv = document.createElement('code'); cv.textContent = ck.value_masked || ck.value || ''; tdv.appendChild(cv); tr.appendChild(tdv);
-      const tdd = document.createElement('td'); tdd.textContent = ck.domain || ''; tr.appendChild(tdd);
-      const tde = document.createElement('td'); tde.textContent = (ck.expires && ck.expires > 0) ? new Date(ck.expires * 1000).toISOString().slice(0,10) : 'session'; tr.appendChild(tde);
-      tbody.appendChild(tr);
-    }
+    _allCookies = c.cookies;
+    document.getElementById('cookie-count').textContent = `${c.count} cookies · ${c.domains.length} domains`;
+    document.getElementById('raw-json').textContent = JSON.stringify(c, null, 2);
+    // Top stats
     const list = document.getElementById('cookie-list');
-    list.textContent = '';
-    const top = document.createElement('div');
-    top.style.marginBottom = '12px';
-    const mkStat = (val, label, cls) => {
-      const s = document.createElement('span'); s.className = 'stat' + (cls ? ' ' + cls : '');
-      const v = document.createElement('strong'); v.textContent = String(val); s.appendChild(v);
-      const l = document.createElement('span'); l.textContent = label; s.appendChild(l);
-      return s;
-    };
-    top.appendChild(mkStat(li.value_masked, `li_at file (${li.bytes}B, mode=${li.mode})`));
-    top.appendChild(mkStat(st.bytes + 'B', 'storage_state.json'));
-    top.appendChild(mkStat(consistency, 'consistency', consCls));
-    list.appendChild(top);
+    list.innerHTML = '';
+    // Build filters
+    const filterBar = document.createElement('div');
+    filterBar.className = 'cookie-search';
+    const search = document.createElement('input');
+    search.type = 'text';
+    search.placeholder = '🔍 Search cookies (name, domain, value)…';
+    search.id = 'cookie-search-input';
+    search.addEventListener('input', renderTable);
+    filterBar.appendChild(search);
+    const chips = document.createElement('div');
+    chips.className = 'filter-chips';
+    const chipDefs = [
+      ['auth', '⭐ Auth'],
+      ['linkedin', '🔗 LinkedIn'],
+      ['secure', '🔒 Secure'],
+      ['expired', '⏰ Expiring soon'],
+    ];
+    chipDefs.forEach(([k, label]) => {
+      const chip = document.createElement('span');
+      chip.className = 'filter-chip';
+      chip.textContent = label;
+      chip.dataset.filter = k;
+      chip.addEventListener('click', () => {
+        if (_activeFilters.has(k)) { _activeFilters.delete(k); chip.classList.remove('active'); }
+        else { _activeFilters.add(k); chip.classList.add('active'); }
+        renderTable();
+      });
+      chips.appendChild(chip);
+    });
+    filterBar.appendChild(chips);
+    list.appendChild(filterBar);
+    // Table wrapper
+    const wrap = document.createElement('div');
+    wrap.className = 'table-wrap';
     const table = document.createElement('table');
-    const thead = document.createElement('thead');
-    thead.innerHTML = '<tr><th></th><th>name</th><th>value</th><th>domain</th><th>expires</th></tr>';
-    table.appendChild(thead);
-    table.appendChild(tbody);
-    list.appendChild(table);
+    table.className = 'cookie-table';
+    table.id = 'cookie-table-body-host';
+    wrap.appendChild(table);
+    list.appendChild(wrap);
+    renderTable();
   } catch (e) {
     document.getElementById('cookie-list').textContent = e.message;
   }
 }
+function renderTable() {
+  const search = (document.getElementById('cookie-search-input')?.value || '').toLowerCase();
+  const filtered = _allCookies.filter(c => {
+    // Text search
+    if (search) {
+      const hay = `${c.name} ${c.domain} ${c.value} ${c.value_masked || ''}`.toLowerCase();
+      if (!hay.includes(search)) return false;
+    }
+    // Chip filters
+    if (_activeFilters.has('auth') && !c._is_auth) return false;
+    if (_activeFilters.has('linkedin') && !(c.domain || '').includes('linkedin')) return false;
+    if (_activeFilters.has('secure') && !c.secure) return false;
+    if (_activeFilters.has('expired')) {
+      const exp = c.expires || 0;
+      if (exp > 0 && exp * 1000 > Date.now() + 7 * 24 * 3600 * 1000) return false; // >7 days = not expiring
+    }
+    return true;
+  });
+  const host = document.querySelector('.cookie-table');
+  host.innerHTML = '';
+  // Header
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th></th><th>name</th><th>value</th><th>domain</th><th>expires</th></tr>';
+  host.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  for (const ck of filtered) {
+    const tr = document.createElement('tr');
+    if (ck._is_auth) tr.classList.add('auth-row');
+    // Flags cell
+    const tdf = document.createElement('td');
+    if (ck._is_auth) { const sp = document.createElement('span'); sp.className = 'pill'; sp.textContent = '⭐AUTH'; tdf.appendChild(sp); }
+    if (ck.secure) tdf.appendChild(document.createTextNode(' 🔒'));
+    if (ck.httpOnly) tdf.appendChild(document.createTextNode(' 🚫JS'));
+    tr.appendChild(tdf);
+    // Name
+    const tdn = document.createElement('td');
+    const cn = document.createElement('code');
+    cn.textContent = ck.name || '';
+    tdn.appendChild(cn);
+    tr.appendChild(tdn);
+    // Value (masked)
+    const tdv = document.createElement('td');
+    tdv.className = 'val-cell';
+    const cv = document.createElement('code');
+    cv.textContent = ck.value_masked || (ck.value || '').slice(0, 8) + '…' || '';
+    cv.title = ck.value || '';  // hover for full value (dev convenience)
+    tdv.appendChild(cv);
+    tr.appendChild(tdv);
+    // Domain
+    const tdd = document.createElement('td');
+    tdd.textContent = ck.domain || '';
+    tr.appendChild(tdd);
+    // Expires
+    const tde = document.createElement('td');
+    if (ck.expires && ck.expires > 0) {
+      const dt = new Date(ck.expires * 1000);
+      const days = Math.round((dt - Date.now()) / 86400000);
+      tde.textContent = dt.toISOString().slice(0,10) + ` (${days}d)`;
+      if (days < 7) tr.classList.add('expired-row');
+    } else {
+      tde.textContent = 'session';
+    }
+    tr.appendChild(tde);
+    tbody.appendChild(tr);
+  }
+  host.appendChild(tbody);
+  // Footer count
+  if (filtered.length !== _allCookies.length) {
+    const note = document.createElement('div');
+    note.style.cssText = 'padding:8px 12px;font-size:12px;color:var(--fg-tertiary)';
+    note.textContent = `Showing ${filtered.length} of ${_allCookies.length} cookies`;
+    host.parentElement.appendChild(note);
+  }
+}
 
-async function loginHeaded() {
-  await loginStart(false);
+// ── Re-verify button ────────────────────────────────
+async function verifyNow() {
+  const status = document.getElementById('login-status');
+  status.innerHTML = '⏳ verifying session…';
+  try {
+    const h = await jget('/api/profile/health');
+    status.innerHTML = h.overall_ok
+      ? '<span class="ok">✓ Session is valid · LinkedIn returned HTTP ' + h.linkedin_http_status + ' in ' + h.linkedin_elapsed_ms + 'ms</span>'
+      : '<span class="alert">✗ Session invalid · HTTP ' + h.linkedin_http_status + '</span>';
+    loadHealth();
+  } catch (e) {
+    status.innerHTML = '<span class="alert">✗ ' + e.message + '</span>';
+  }
 }
-async function loginHeadless() {
-  await loginStart(true);
-}
+
+// ── Browser login ───────────────────────────────────
+async function loginHeaded() { await loginStart(false); }
+async function loginHeadless() { await loginStart(true); }
 async function loginStart(headless) {
   const status = document.getElementById('login-status');
-  status.textContent = '⏳ launching browser...';
+  status.innerHTML = '⏳ launching browser...';
   try {
     const r = await jpost('/api/login/start?headless=' + headless, {});
-    status.textContent = '';
-    const ok = document.createElement('span'); ok.className = 'ok'; ok.textContent = '✓ Login process started (PID ' + r.pid + ')'; status.appendChild(ok);
-    status.appendChild(document.createElement('br'));
-    const small = document.createElement('small'); small.textContent = r.tip || ''; status.appendChild(small);
+    status.innerHTML = '<span class="ok">✓ Login started (PID ' + r.pid + ')</span><br><small>' + (r.tip || '') + '</small>';
     document.getElementById('login-cancel').disabled = false;
     pollLogin();
   } catch (e) {
-    status.innerHTML = `<span class="alert">✗ ${e.message}</span>`;
+    status.innerHTML = '<span class="alert">✗ ' + e.message + '</span>';
   }
 }
 async function pollLogin() {
   const s = await jget('/api/login/status');
+  const status = document.getElementById('login-status');
   if (!s.running) {
     document.getElementById('login-cancel').disabled = true;
     if (s.ok === true) {
-      document.getElementById('login-status').innerHTML += '<br><span class="ok">✓ Login completed! Reloading cookies...</span>';
+      status.innerHTML += '<br><span class="ok">✓ Login completed! Reloading…</span>';
       setTimeout(() => { loadHealth(); loadCookies(); }, 1000);
     } else if (s.error) {
-      document.getElementById('login-status').innerHTML += `<br><span class="alert">✗ ${s.error}</span>`;
+      status.innerHTML += '<br><span class="alert">✗ ' + s.error + '</span>';
     }
   } else {
     setTimeout(pollLogin, 2000);
@@ -218,41 +531,48 @@ async function loginCancel() {
   document.getElementById('login-cancel').disabled = true;
 }
 
+// ── li_at paste ─────────────────────────────────────
 async function setLiAt() {
   const value = document.getElementById('li-at-input').value.trim();
   if (!value) { alert('Paste li_at value first'); return; }
   const status = document.getElementById('li-at-status');
-  status.textContent = '⏳ saving and testing...';
+  status.innerHTML = '⏳ saving and testing...';
   try {
     const r = await jpost('/api/cookies/li_at', {value, note: 'set via web UI'});
-    status.textContent = '';
-    const pathInfo = document.createElement('small');
+    status.innerHTML = '';
+    const pathInfo = document.createElement('div');
+    pathInfo.style.fontSize = '12px';
+    pathInfo.style.color = 'var(--fg-tertiary)';
     if (r.wrote.fallback_used) {
       const w = document.createElement('span'); w.className = 'warn'; w.textContent = '⚠ fallback path used'; pathInfo.appendChild(w);
       pathInfo.appendChild(document.createTextNode(' written to '));
       const c1 = document.createElement('code'); c1.textContent = r.wrote.path; pathInfo.appendChild(c1);
-      pathInfo.appendChild(document.createTextNode(' (requested '));
-      const c2 = document.createElement('code'); c2.textContent = r.wrote.requested_path; pathInfo.appendChild(c2);
-      pathInfo.appendChild(document.createTextNode(' not writable)'));
     } else {
       pathInfo.appendChild(document.createTextNode('saved to '));
       const c1 = document.createElement('code'); c1.textContent = r.wrote.path; pathInfo.appendChild(c1);
-      pathInfo.appendChild(document.createTextNode(` (${r.wrote.bytes}B, mode ${r.wrote.mode})`));
+      pathInfo.appendChild(document.createTextNode(' (' + r.wrote.bytes + 'B, mode ' + r.wrote.mode + ')'));
     }
     if (r.health.is_logged_in) {
-      const ok = document.createElement('span'); ok.className = 'ok'; ok.textContent = '✓ Saved + login verified!'; status.appendChild(ok);
-      status.appendChild(document.createTextNode(` (${r.health.elapsed_ms}ms, title: "${r.health.title || ''}")`));
+      const ok = document.createElement('div');
+      ok.className = 'ok';
+      ok.style.marginTop = '8px';
+      ok.textContent = '✓ Saved + login verified! (' + r.health.elapsed_ms + 'ms, title: "' + (r.health.title || '') + '")';
+      status.appendChild(ok);
     } else {
-      const wn = document.createElement('span'); wn.className = 'warn'; wn.textContent = `⚠ Saved but login check failed: HTTP ${r.health.http_status} title="${r.health.title || ''}"`; status.appendChild(wn);
+      const wn = document.createElement('div');
+      wn.className = 'warn';
+      wn.style.marginTop = '8px';
+      wn.textContent = '⚠ Saved but login check failed: HTTP ' + r.health.http_status + ' title="' + (r.health.title || '') + '"';
+      status.appendChild(wn);
     }
-    status.appendChild(document.createElement('br'));
     status.appendChild(pathInfo);
     loadHealth(); loadCookies();
   } catch (e) {
-    status.innerHTML = `<span class="alert">✗ ${e.message}</span>`;
+    status.innerHTML = '<span class="alert">✗ ' + e.message + '</span>';
   }
 }
 
+// ── JSON import ─────────────────────────────────────
 async function importCookies() {
   const txt = document.getElementById('import-input').value.trim();
   if (!txt) { alert('Paste cookie JSON first'); return; }
@@ -264,19 +584,18 @@ async function importCookies() {
   try {
     const r = await jpost('/api/cookies/import', {cookies});
     let extra = '';
-    if (r.health && r.health.is_logged_in) extra = `<br><span class="ok">✓ login verified</span>`;
-    else if (r.health) extra = `<br><span class="warn">⚠ saved but login check: HTTP ${r.health.http_status}</span>`;
-    status.innerHTML = `<span class="ok">✓ Imported ${r.imported} cookies (${r.storage_state_bytes}B)${r.li_at_synced ? ' + li_at synced' : ''}</span>${extra}`;
+    if (r.health && r.health.is_logged_in) extra = '<br><span class="ok">✓ login verified</span>';
+    else if (r.health) extra = '<br><span class="warn">⚠ saved but login check: HTTP ' + r.health.http_status + '</span>';
+    status.innerHTML = '<span class="ok">✓ Imported ' + r.imported + ' cookies (' + r.storage_state_bytes + 'B)' + (r.li_at_synced ? ' + li_at synced' : '') + '</span>' + extra;
     loadHealth(); loadCookies();
   } catch (e) {
-    status.innerHTML = `<span class="alert">✗ ${e.message}</span>`;
+    status.innerHTML = '<span class="alert">✗ ' + e.message + '</span>';
   }
 }
 
+// ── Init ────────────────────────────────────────────
 loadHealth(); loadCookies();
-setInterval(() => { loadHealth(); loadCookies(); }, 30000);  // refresh every 30s
+setInterval(() => { loadHealth(); loadCookies(); }, 30000);
 </script>
-  </div>
-</main>
 </body>
 </html>

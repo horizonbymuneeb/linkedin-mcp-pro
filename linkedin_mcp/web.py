@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import os
+import json
 from datetime import datetime, timezone
 import re
 from pathlib import Path
@@ -470,7 +471,20 @@ def api_profile() -> dict[str, Any]:
             except Exception:
                 pass
         if li_at:
-            client = VoyagerClient(li_at=li_at, timeout=5.0)
+            # Also load JSESSIONID from storage_state.json (required by LinkedIn Voyager)
+            jsessionid = ""
+            try:
+                from .cookies_api import _storage_state_path
+                _ss = _storage_state_path()
+                if _ss.exists():
+                    _state = json.loads(_ss.read_text())
+                    for _c in _state.get("cookies", []):
+                        if _c.get("name") == "JSESSIONID" and _c.get("value"):
+                            jsessionid = _c["value"]
+                            break
+            except Exception:
+                pass
+            client = VoyagerClient(li_at=li_at, jsessionid=jsessionid or None, timeout=5.0)
             data = None
             try:
                 # Use a fresh event loop with explicit close to avoid hangs

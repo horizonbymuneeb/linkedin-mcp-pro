@@ -482,12 +482,85 @@ def api_profile_health() -> dict[str, Any]:
     li_at = _read_li_at()
     state = _read_storage_state()
     storage_age = None
+    storage_mtime = None
     if _storage_state_path().exists():
         mtime = _storage_state_path().stat().st_mtime
+        storage_mtime = mtime
         storage_age_days = (time.time() - mtime) / 86400
         storage_age = round(storage_age_days, 2)
 
     health = _check_li_at_validity(li_at) if li_at else {"ok": False, "error": "no cookie"}
+
+    # Timeline: relative-time strings for the UI
+    def _ago(ts: float) -> str:
+        s = int(time.time() - ts)
+        if s < 60: return f"{s}s ago"
+        if s < 3600: return f"{s // 60}m ago"
+        if s < 86400: return f"{s // 3600}h ago"
+        return f"{s // 86400}d ago"
+
+    # Pull last audit events for "last verified" / "last failed"
+    timeline: dict = {"last_saved": None, "last_verified": None, "last_failed": None}
+    try:
+        # Find the actual audit db — linkedin-mcp stores it under data/
+        candidates = [
+            _li_at_path().parent / "audit.db",
+            Path("/home/admin/linkedin-mcp-pro/data/linkedin-mcp-pro.db"),
+        ]
+        # Also try discover via env / config
+        try:
+            from .config import load_config
+            cfg = load_config()
+            dbp = getattr(cfg, "db_path", None)
+            if dbp:
+                candidates.insert(0, Path(dbp))
+        except Exception:
+            pass
+        seen = set()
+        for db_path in candidates:
+            if db_path in seen or not db_path.exists():
+                continue
+            seen.add(db_path)
+            import sqlite3
+            with sqlite3.connect(str(db_path)) as conn:
+                # Detect column name (created_at vs ts)
+                cols = [r[1] for r in conn.execute("PRAGMA table_info(audit_log)").fetchall()]
+                if not cols:
+                    continue
+                ts_col = "created_at" if "created_at" in cols else ("ts" if "ts" in cols else cols[0])
+                rows = conn.execute(
+                    f"SELECT {ts_col}, status, action, detail FROM audit_log "
+                    "WHERE action IN ('login_verify','cookie_set','cookie_import','login_start','profile_load') "
+                    f"ORDER BY {ts_col} DESC LIMIT 30"
+                ).fetchall()
+                for ts, status_v, action, detail in rows:
+                    if not ts:
+                        continue
+                    try:
+                        ts_f = float(ts) if isinstance(ts, (int, float)) else None
+                        if ts_f is None:
+                            from datetime import datetime as _dt
+                            # Try parse ISO string
+                            try:
+                                ts_f = _dt.fromisoformat(str(ts).replace("Z", "+00:00")).timestamp()
+                            except Exception:
+                                continue
+                    except Exception:
+                        continue
+                    rel = _ago(ts_f)
+                    if action in ("cookie_set", "cookie_import") and timeline["last_saved"] is None:
+                        timeline["last_saved"] = rel
+                    if action in ("login_verify", "profile_load"):
+                        ok = str(status_v).lower() in ("ok", "success", "verified", "200")
+                        if ok and timeline["last_verified"] is None:
+                            timeline["last_verified"] = rel
+                        if not ok and timeline["last_failed"] is None:
+                            timeline["last_failed"] = rel
+                break  # only first matching db
+    except Exception:
+        pass
+    if timeline["last_saved"] is None and storage_mtime:
+        timeline["last_saved"] = _ago(storage_mtime)
 
     return {
         "li_at_present": bool(li_at),
@@ -498,6 +571,8 @@ def api_profile_health() -> dict[str, Any]:
         "linkedin_logged_in": health.get("is_logged_in", False),
         "linkedin_http_status": health.get("http_status"),
         "linkedin_elapsed_ms": health.get("elapsed_ms"),
+        "last_error": health.get("error") or health.get("title") or None,
         "overall_ok": bool(li_at) and health.get("is_logged_in", False),
         "checked_at": datetime.now(timezone.utc).isoformat(),
+        "timeline": timeline,
     }
