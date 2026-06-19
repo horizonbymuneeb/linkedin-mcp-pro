@@ -27,7 +27,13 @@ def test_dashboard_renders(client: TestClient) -> None:
     r = client.get("/")
     assert r.status_code == 200
     assert "linkedin-mcp-pro" in r.text
-    assert "Draft a post" in r.text
+    # Cockpit v3 uses "New post" CTA (was "Draft a post" in v1.0/v2.0)
+    assert "New post" in r.text
+    # Sanity: the 4 KPI tiles
+    assert "Posts" in r.text
+    assert "Engagements" in r.text
+    # Action row
+    assert "Engage" in r.text or "Schedule" in r.text
 
 
 def test_api_summary(client: TestClient) -> None:
@@ -90,6 +96,31 @@ def test_api_drafts_endpoint_exists(client: TestClient) -> None:
         )
         assert r.status_code == 200
         assert r.json()["text"] == "Drafted text"
+
+
+def test_api_drafts_save_and_list(client: TestClient) -> None:
+    # Save a draft
+    r = client.post("/api/drafts/save", json={"topic": "Test", "body": "Hello world", "tone": "casual"})
+    assert r.status_code == 200, r.text
+    data = r.json()
+    assert data["ok"] is True
+    assert "id" in data
+    draft_id = data["id"]
+
+    # List drafts
+    r = client.get("/api/drafts")
+    assert r.status_code == 200
+    drafts = r.json()["drafts"]
+    assert any(d["id"] == draft_id for d in drafts)
+
+    # Delete
+    r = client.delete(f"/api/drafts/{draft_id}")
+    assert r.status_code == 200
+    assert r.json()["removed"] == 1
+
+    # Verify gone
+    r = client.get("/api/drafts")
+    assert not any(d["id"] == draft_id for d in r.json()["drafts"])
 
 
 def test_dashboard_html_includes_js_handlers() -> None:

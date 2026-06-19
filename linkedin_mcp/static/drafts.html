@@ -128,15 +128,16 @@ function draftsPanel() {
     recent: [],
     async init() { await this.loadRecent(); },
     async loadRecent() {
-      try { const r = await fetch('/api/drafts'); if (r.ok) this.recent = await r.json(); } catch (e) { this.recent = []; }
+      try { const r = await fetch('/api/drafts'); if (r.ok) { const d = await r.json(); this.recent = d.drafts || d || []; } } catch (e) { this.recent = []; }
     },
     async draft() {
+      if (!this.form.topic.trim()) { alert('Please enter a topic'); return; }
       this.loading = true;
       try {
-        const r = await fetch('/api/drafts/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(this.form) });
-        if (r.ok) { const d = await r.json(); this.output = d.body || ''; }
-        else this.output = this._localDraft();
-      } catch (e) { this.output = this._localDraft(); }
+        const r = await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: this.form.topic, tone: this.form.tone, length: this.form.length, include_hashtags: this.form.hashtags }) });
+        if (r.ok) { const d = await r.json(); this.output = d.text || ''; }
+        else { const err = await r.text(); this.output = ''; alert('Draft failed: ' + err); }
+      } catch (e) { alert('Draft failed: ' + e.message); }
       this.loading = false;
     },
     _localDraft() {
@@ -144,9 +145,23 @@ function draftsPanel() {
       return `Thoughts on ${this.form.topic} in a ${this.form.tone} tone — here are ${this.form.length} words of insight…\n\nKey points:\n• One\n• Two\n• Three${tag}`;
     },
     async save() {
-      try { await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: this.form.topic, body: this.output }) }); await this.loadRecent(); } catch (e) {}
+      if (!this.output.trim()) { alert('Nothing to save — generate a draft first'); return; }
+      try {
+        const r = await fetch('/api/drafts/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: this.form.topic, body: this.output, tone: this.form.tone }) });
+        if (r.ok) { await this.loadRecent(); alert('Draft saved'); }
+        else { alert('Save failed: ' + await r.text()); }
+      } catch (e) { alert('Save failed: ' + e.message); }
     },
-    async post() { if (!confirm('Publish this post now?')) return; try { await fetch('/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ body: this.output }) }); alert('Posted!'); } catch (e) {} }
+    async post() {
+      if (!this.output.trim()) { alert('Generate a draft first'); return; }
+      if (!confirm('Publish this post to LinkedIn now?')) return;
+      try {
+        const r = await fetch('/api/post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: this.output, dry_run: false }) });
+        const d = await r.json();
+        if (r.ok) { alert('Posted! (' + (d.text_len || 0) + ' chars)'); }
+        else { alert('Post failed: ' + (d.detail || r.statusText)); }
+      } catch (e) { alert('Post failed: ' + e.message); }
+    }
   }
 }
 </script>

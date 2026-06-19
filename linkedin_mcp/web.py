@@ -100,6 +100,85 @@ def api_version() -> dict[str, Any]:
     return {"version": app.version, "name": app.title}
 
 
+# ----------------------------------------------------------------------------
+# Drafts storage helpers (saved drafts — not the LLM-generated ones)
+# ----------------------------------------------------------------------------
+
+
+def _drafts_key() -> str:
+    return "saved_drafts_v1"
+
+
+def _load_drafts(db: DB) -> list[dict[str, Any]]:
+    try:
+        with db.transaction() as conn:
+            row = conn.execute(
+                "SELECT value FROM session_state WHERE key = ?", (_drafts_key(),)
+            ).fetchone()
+        if not row:
+            return []
+        import json as _json
+        return _json.loads(row[0])
+    except Exception:
+        return []
+
+
+def _save_drafts(db: DB, drafts: list[dict[str, Any]]) -> None:
+    import json as _json
+    payload = _json.dumps(drafts, ensure_ascii=False)
+    with db.transaction() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO session_state(key, value, updated_at) VALUES (?, ?, ?)",
+            (_drafts_key(), payload, _now_iso()),
+        )
+
+
+def _now_iso() -> str:
+    from datetime import datetime, timezone
+    return datetime.now(timezone.utc).isoformat()
+
+
+@app.get("/api/drafts", response_model=None)
+def api_drafts_list() -> dict[str, Any]:
+    """List saved drafts (DB-backed). Note: POST /api/drafts is the LLM generate endpoint above."""
+    return {"drafts": _load_drafts(_db())}
+
+
+class SaveDraftRequest(BaseModel):
+    topic: str = ""
+    body: str
+    tone: str = "professional"
+
+
+@app.post("/api/drafts/save")
+def api_drafts_save(req: SaveDraftRequest) -> dict[str, Any]:
+    db = _db()
+    drafts = _load_drafts(db)
+    new = {
+        "id": f"draft_{int(__import__('time').time() * 1000)}",
+        "topic": req.topic,
+        "body": req.body,
+        "tone": req.tone,
+        "ts": _now_iso(),
+    }
+    drafts.insert(0, new)
+    drafts = drafts[:50]  # cap at 50
+    _save_drafts(db, drafts)
+    db.audit("draft_save", "self", "success", detail={"id": new["id"], "len": len(req.body)})
+    return {"ok": True, "id": new["id"], "draft": new}
+
+
+@app.delete("/api/drafts/{draft_id}")
+def api_drafts_delete(draft_id: str) -> dict[str, Any]:
+    db = _db()
+    drafts = _load_drafts(db)
+    before = len(drafts)
+    drafts = [d for d in drafts if d.get("id") != draft_id]
+    _save_drafts(db, drafts)
+    removed = before - len(drafts)
+    return {"ok": True, "removed": removed}
+
+
 @app.get("/api/summary")
 def api_summary(days: int = 30) -> dict[str, Any]:
     db = _db()
