@@ -40,7 +40,7 @@ log = logging.getLogger("linkedin_mcp.web")
 app = FastAPI(
     title="linkedin-mcp-pro web",
     description="Browser UI for the LinkedIn MCP server",
-    version="1.1.0",
+    version="2.0.0",
 )
 app.include_router(cookies_router)
 try:
