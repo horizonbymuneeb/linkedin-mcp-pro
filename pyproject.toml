@@ -63,6 +63,7 @@ linkedin-mcp-login = "linkedin_mcp.cli:login"
 linkedin-mcp-templates = "linkedin_mcp.cli_templates:main"
 linkedin-mcp-deadman = "linkedin_mcp.cli_deadman:main"
 linkedin-mcp-schedule = "linkedin_mcp.cli_scheduler:main"
+linkedin-mcp-web = "linkedin_mcp.web:main"
 linkedin-mcp-analytics = "linkedin_mcp.cli_analytics:main"
 
 [project.urls]
