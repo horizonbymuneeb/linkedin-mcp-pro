@@ -3,468 +3,228 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>linkedin-mcp-pro</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Home · linkedin-mcp-pro</title>
+  {% include "_shell.html" %}
+</head>
+<body>
+  <main class="ml-[240px] pt-14 min-h-screen" x-data="homePage()" x-init="init()">
+    <div class="max-w-6xl mx-auto px-6 py-8">
+
+      <!-- Greeting + greeting time-aware -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-semibold text-fg-primary tracking-tight" x-text="greeting"></h1>
+        <p class="text-sm text-fg-secondary mt-1" x-text="subtitle"></p>
+      </div>
+
+      <!-- KPI row -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="card p-4">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-fg-tertiary mb-1.5">Posts</div>
+          <div class="text-2xl font-semibold tabular text-fg-primary" x-text="stats.posts">0</div>
+          <div class="text-[11px] text-fg-tertiary mt-1">last 7 days</div>
+        </div>
+        <div class="card p-4">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-fg-tertiary mb-1.5">Engagements</div>
+          <div class="text-2xl font-semibold tabular text-fg-primary" x-text="stats.engagements">0</div>
+          <div class="text-[11px] text-fg-tertiary mt-1">last 30 days</div>
+        </div>
+        <div class="card p-4">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-fg-tertiary mb-1.5">Applications</div>
+          <div class="text-2xl font-semibold tabular text-fg-primary" x-text="stats.applications">0</div>
+          <div class="text-[11px] text-fg-tertiary mt-1">jobs · last 30d</div>
+        </div>
+        <div class="card p-4">
+          <div class="text-[10px] font-semibold uppercase tracking-wider text-fg-tertiary mb-1.5">Server</div>
+          <div class="flex items-center gap-2">
+            <span class="dot-pulse"></span>
+            <span class="text-2xl font-semibold tabular text-fg-primary" x-text="stats.version">v2.3.0</span>
+          </div>
+          <div class="text-[11px] text-fg-tertiary mt-1" x-text="`uptime ${stats.uptime}`"></div>
+        </div>
+      </div>
+
+      <!-- Quick actions -->
+      <div class="flex flex-wrap gap-2 mb-6">
+        <a href="/static/drafts.html" class="btn btn-primary">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+          New post
+        </a>
+        <a href="/static/jobs.html" class="btn btn-ghost">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          Browse jobs
+        </a>
+        <a href="/static/schedules.html" class="btn btn-ghost">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+          Schedule
+        </a>
+        <a href="/static/engagement.html" class="btn btn-ghost">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+          Engage
+        </a>
+      </div>
+
+      <!-- Main 2-col -->
+      <div class="grid lg:grid-cols-3 gap-4">
+
+        <!-- Left: Activity feed -->
+        <div class="lg:col-span-2 card p-5">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-base font-semibold text-fg-primary">Recent activity</h2>
+            <a href="/static/audit.html" class="text-xs text-fg-secondary hover:text-fg-primary">View all →</a>
+          </div>
+          <template x-if="activities.length === 0">
+            <div class="text-center py-12">
+              <div class="w-12 h-12 mx-auto rounded-full bg-[var(--surface-subtle)] flex items-center justify-center mb-3">
+                <svg class="w-6 h-6 text-fg-tertiary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <p class="text-sm text-fg-secondary mb-3">No activity yet</p>
+              <a href="/static/drafts.html" class="btn btn-primary">Write your first post</a>
+            </div>
+          </template>
+          <template x-for="a in activities.slice(0,8)" :key="a.id">
+            <div class="flex items-start gap-3 py-3 border-b border-[var(--border-default)] last:border-0">
+              <div class="w-8 h-8 rounded-md bg-[var(--surface-subtle)] flex items-center justify-center text-fg-tertiary flex-shrink-0">
+                <svg x-show="a.action === 'post'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5"/></svg>
+                <svg x-show="a.action === 'apply'" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745"/></svg>
+                <svg x-show="!['post','apply'].includes(a.action)" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="text-sm text-fg-primary font-medium" x-text="a.label"></div>
+                <div class="text-xs text-fg-tertiary mt-0.5" x-text="a.target"></div>
+              </div>
+              <span class="text-[11px] text-fg-tertiary whitespace-nowrap" x-text="relTime(a.ts)"></span>
+            </div>
+          </template>
+        </div>
+
+        <!-- Right column: Status + Setup -->
+        <div class="space-y-4">
+          <div class="card p-5">
+            <h3 class="text-xs font-semibold uppercase tracking-wider text-fg-tertiary mb-3">System status</h3>
+            <div class="space-y-2.5 text-sm">
+              <div class="flex items-center justify-between">
+                <span class="text-fg-secondary">Cookie</span>
+                <span class="flex items-center gap-1.5">
+                  <span :class="status.cookie === 'valid' ? 'bg-success' : 'bg-warning'" class="w-2 h-2 rounded-full"></span>
+                  <span class="text-fg-primary text-xs font-medium" x-text="status.cookie || 'unknown'"></span>
+                </span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-fg-secondary">LLM keys</span>
+                <span class="text-fg-primary text-xs font-medium tabular" x-text="status.llm_keys || 0"></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-fg-secondary">Schedules</span>
+                <span class="text-fg-primary text-xs font-medium tabular" x-text="status.schedules || 0"></span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span class="text-fg-secondary">Applications</span>
+                <span class="text-fg-primary text-xs font-medium tabular" x-text="status.applications || 0"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card p-5" x-show="setupSteps.some(s => !s.done)">
+            <div class="flex items-center justify-between mb-3">
+              <h3 class="text-xs font-semibold uppercase tracking-wider text-fg-tertiary">Setup</h3>
+              <span class="text-[11px] text-fg-tertiary tabular" x-text="`${setupSteps.filter(s=>s.done).length}/${setupSteps.length}`"></span>
+            </div>
+            <div class="space-y-2">
+              <template x-for="(s,i) in setupSteps" :key="i">
+                <a :href="s.href" class="flex items-start gap-2.5 p-2 rounded-md hover-surface group">
+                  <span :class="s.done ? 'bg-success text-white' : 'bg-[var(--surface-subtle)] text-fg-tertiary'" class="w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">
+                    <span x-show="s.done">✓</span>
+                    <span x-show="!s.done" x-text="i+1"></span>
+                  </span>
+                  <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-fg-primary" x-text="s.label"></div>
+                    <div class="text-[11px] text-fg-tertiary" x-text="s.detail"></div>
+                  </div>
+                </a>
+              </template>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            // Surfaces
-            'surface': {
-              page: '#fafafa',
-              DEFAULT: '#ffffff',
-              subtle: '#f5f5f5',
-              hover: '#fafafa',
-            },
-            // Borders
-            'border': {
-              DEFAULT: '#ebebeb',
-              strong: '#e0e0e0',
-              subtle: '#f0f0f0',
-            },
-            // Text
-            'fg': {
-              primary: '#171717',
-              secondary: '#525252',
-              tertiary: '#8a8a8a',
-              disabled: '#b3b3b3',
-            },
-            // Accent — Linear-inspired, professional purple
-            'accent': {
-              DEFAULT: '#5e6ad2',
-              hover: '#4f5bc4',
-              subtle: '#eef0fb',
-              border: '#d8dcf3',
-            },
-            // LinkedIn brand (for icon only)
-            'li-blue': '#0a66c2',
-            'li-blue-dark': '#004182',
-            // Status
-            'success': { DEFAULT: '#4cb782', bg: '#e6f6ec' },
-            'warning': { DEFAULT: '#c79100', bg: '#fef7e0' },
-            'danger':  { DEFAULT: '#eb5757', bg: '#fde8e8' },
-          },
-          fontFamily: {
-            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
-          },
-          fontSize: {
-            'xs': ['12px', { lineHeight: '16px' }],
-            'sm': ['13px', { lineHeight: '18px' }],
-            'base': ['14px', { lineHeight: '20px' }],
-            'md': ['16px', { lineHeight: '24px' }],
-            'lg': ['20px', { lineHeight: '28px' }],
-            'xl': ['24px', { lineHeight: '32px' }],
-            '2xl': ['32px', { lineHeight: '40px' }],
-          },
-          borderRadius: {
-            'sm': '4px',
-            'md': '6px',
-            'lg': '8px',
-            'xl': '10px',
-          },
-          transitionDuration: {
-            DEFAULT: '150ms',
-          },
+    function homePage() {
+      return {
+        greeting: '', subtitle: '',
+        stats: { posts:0, engagements:0, applications:0, version:'v2.3.0', uptime:'—' },
+        status: { cookie: 'unknown', llm_keys:0, schedules:0, applications:0 },
+        activities: [],
+        setupSteps: [
+          { label:'Connect LinkedIn', detail:'Add a session cookie', done:false, href:'/static/connect.html' },
+          { label:'Add LLM key', detail:'For post drafting', done:false, href:'/static/llm.html' },
+          { label:'Install to agent', detail:'Claude / Cursor / etc.', done:false, href:'/static/install.html' },
+        ],
+        async init() {
+          // Time-aware greeting
+          const h = new Date().getHours();
+          this.greeting = h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
+          this.subtitle = new Date().toLocaleDateString('en-US', { weekday:'long', month:'long', day:'numeric' });
+
+          // Stats
+          try {
+            const v = await fetch('/api/version').then(r=>r.json());
+            this.stats.version = v.version || 'v2.3.0';
+            this.stats.uptime = v.uptime_human || '—';
+          } catch {}
+
+          try {
+            const s = await fetch('/api/summary').then(r=>r.json());
+            if (s) {
+              this.stats.posts = s.posts_total || 0;
+              this.stats.engagements = s.engagements_total || 0;
+              this.stats.applications = s.applications_total || 0;
+              this.status = s.status || this.status;
+            }
+          } catch {}
+
+          // Setup steps from existing endpoints
+          try {
+            const c = await fetch('/api/cookies/status').then(r=>r.json()).catch(()=>({valid:false}));
+            this.setupSteps[0].done = !!c.valid;
+            this.status.cookie = c.valid ? 'valid' : 'missing';
+          } catch {}
+
+          try {
+            const ll = await fetch('/api/llm/keys').then(r=>r.json()).catch(()=>[]);
+            this.setupSteps[1].done = Array.isArray(ll) && ll.length > 0;
+            this.status.llm_keys = Array.isArray(ll) ? ll.length : 0;
+          } catch {}
+
+          // Activity
+          try {
+            const events = await fetch('/api/audit?limit=10').then(r=>r.json()).catch(()=>null);
+            const arr = Array.isArray(events) ? events : (events && events.events) ? events.events : [];
+            this.activities = arr.map(e => ({
+              id: e.id || Math.random(),
+              action: e.action || 'event',
+              label: e.action || 'Event',
+              target: e.target || (e.detail && JSON.stringify(e.detail)) || '',
+              ts: e.ts || e.timestamp || new Date().toISOString(),
+              result: e.result,
+            }));
+          } catch {}
         },
-      },
+        relTime(iso) {
+          if (!iso) return '';
+          const diff = Date.now() - new Date(iso).getTime();
+          const min = Math.floor(diff/60000);
+          if (min < 1) return 'just now';
+          if (min < 60) return `${min}m`;
+          const h = Math.floor(min/60);
+          if (h < 24) return `${h}h`;
+          const d = Math.floor(h/24);
+          if (d < 7) return `${d}d`;
+          return new Date(iso).toLocaleDateString();
+        }
+      };
     }
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
-  <style>
-    body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, system-ui, sans-serif; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; font-feature-settings: 'cv11', 'ss01'; }
-    [x-cloak] { display: none !important; }
-    .tabular { font-variant-numeric: tabular-nums; }
-    .hairline { border: 1px solid #ebebeb; }
-    .hairline-b { border-bottom: 1px solid #ebebeb; }
-    .hairline-t { border-top: 1px solid #ebebeb; }
-    .hairline-r { border-right: 1px solid #ebebeb; }
-    .focus-ring:focus-visible { outline: 2px solid #5e6ad2; outline-offset: 2px; }
-    /* Subtle status dot */
-    .dot { width: 6px; height: 6px; border-radius: 50%; display: inline-block; }
-    /* Pill */
-    .pill { display: inline-flex; align-items: center; gap: 6px; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 500; line-height: 16px; }
-    .pill::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
-    /* Smooth transitions */
-    * { transition-property: background-color, border-color, color, opacity; transition-duration: 150ms; }
-    /* Skeleton */
-    .skeleton { background: linear-gradient(90deg, #f0f0f0 0%, #f5f5f5 50%, #f0f0f0 100%); background-size: 200% 100%; animation: shimmer 1.5s ease-in-out infinite; }
-    @keyframes shimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
-    .dark .skeleton { background: linear-gradient(90deg, #1f1f1f 0%, #262626 50%, #1f1f1f 100%); background-size: 200% 100%; }
-    /* Scrollbar — minimal */
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #d4d4d4; border-radius: 5px; border: 2px solid transparent; background-clip: padding-box; }
-    ::-webkit-scrollbar-thumb:hover { background: #a3a3a3; border: 2px solid transparent; background-clip: padding-box; }
-  </style>
-  <script>
-    (function() {
-      const saved = localStorage.getItem('theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (saved === 'dark' || (!saved && prefersDark)) {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
-</head>
-<body x-data="cockpit" class="bg-surface-page text-fg-primary min-h-screen">
-
-<!-- TOP NAV — 50px, hairline border, no shadow -->
-<header class="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur hairline-b">
-  <div class="max-w-6xl mx-auto px-6">
-    <div class="flex items-center justify-between h-12">
-      <!-- Brand -->
-      <a href="/" class="flex items-center gap-2 group focus-ring rounded">
-        <div class="w-5 h-5 bg-li-blue rounded flex items-center justify-center">
-          <svg class="w-3.5 h-3.5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
-        </div>
-        <span class="text-sm font-semibold tracking-tight">linkedin-mcp-pro</span>
-        <span class="text-xs text-fg-tertiary font-mono tabular" x-text="'v' + (version || '…')"></span>
-      </a>
-
-      <!-- Center: command palette hint -->
-      <div class="hidden md:flex items-center gap-2 px-2.5 py-1 rounded-md hairline text-xs text-fg-tertiary">
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-        <span>Quick search</span>
-        <kbd class="ml-2 px-1.5 py-0.5 rounded bg-surface-subtle text-[10px] font-mono">⌘K</kbd>
-      </div>
-
-      <!-- Right -->
-      <div class="flex items-center gap-1">
-        <button @click="toggleDark()" class="p-1.5 rounded-md hover:bg-surface-subtle focus-ring" :title="dark ? 'Light mode' : 'Dark mode'">
-          <svg x-show="!dark" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
-          <svg x-show="dark" x-cloak class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
-        </button>
-        <a href="/static/settings.html" class="p-1.5 rounded-md hover:bg-surface-subtle focus-ring" title="Settings">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.75"><path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-        </a>
-        <div class="w-px h-4 bg-border mx-1"></div>
-        <div class="w-7 h-7 rounded-full bg-accent text-white flex items-center justify-center text-xs font-semibold" title="Muneeb Anjum">M</div>
-      </div>
-    </div>
-  </div>
-</header>
-
-<main class="max-w-6xl mx-auto px-6 py-10">
-
-  <!-- ========== GREETING + META ========== -->
-  <section class="mb-8">
-    <h1 class="text-xl font-semibold tracking-tight mb-1" x-text="greeting"></h1>
-    <p class="text-sm text-fg-secondary" x-text="metaLine"></p>
-  </section>
-
-  <!-- ========== KPI TILES (4 across, no icons, big numbers) ========== -->
-  <section class="grid grid-cols-2 lg:grid-cols-4 gap-px bg-border hairline rounded-lg overflow-hidden mb-8">
-    <div class="bg-white dark:bg-gray-900 p-5">
-      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Posts</div>
-      <div class="text-2xl font-semibold tabular" x-text="(summary && summary.total_posts != null) ? summary.total_posts : '—'">—</div>
-      <div class="text-xs mt-2" :class="trendClass('posts')" x-text="trendLabel('posts')">—</div>
-    </div>
-    <div class="bg-white dark:bg-gray-900 p-5">
-      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Engagements</div>
-      <div class="text-2xl font-semibold tabular" x-text="(summary && summary.data_points != null) ? summary.data_points : '—'">—</div>
-      <div class="text-xs mt-2" :class="trendClass('engagements')" x-text="trendLabel('engagements')">—</div>
-    </div>
-    <div class="bg-white dark:bg-gray-900 p-5">
-      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Success rate</div>
-      <div class="text-2xl font-semibold tabular" x-text="summary ? (summary.success_rate_pct + '%') : '—'">—</div>
-      <div class="text-xs mt-2" :class="trendClass('success')" x-text="trendLabel('success')">—</div>
-    </div>
-    <div class="bg-white dark:bg-gray-900 p-5">
-      <div class="text-xs text-fg-tertiary uppercase tracking-wider font-medium mb-3">Avg length</div>
-      <div class="text-2xl font-semibold tabular" x-text="(summary && summary.avg_post_length != null) ? summary.avg_post_length : '—'">—</div>
-      <div class="text-xs mt-2 text-fg-tertiary">characters</div>
-    </div>
-  </section>
-
-  <!-- ========== PRIMARY ACTIONS (small icon row, not big cards) ========== -->
-  <section class="mb-8">
-    <div class="flex items-center gap-2 flex-wrap">
-      <a href="/static/drafts.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-fg-primary text-white text-sm font-medium hover:bg-black focus-ring">
-        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
-        New post
-      </a>
-      <a href="/static/engagement.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-white dark:bg-gray-900 hairline text-sm font-medium hover:bg-surface-subtle focus-ring">
-        Engage
-      </a>
-      <a href="/static/schedules.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-white dark:bg-gray-900 hairline text-sm font-medium hover:bg-surface-subtle focus-ring">
-        Schedule
-      </a>
-      <a href="/static/analytics.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md bg-white dark:bg-gray-900 hairline text-sm font-medium hover:bg-surface-subtle focus-ring">
-        Analytics
-      </a>
-      <div class="w-px h-5 bg-border mx-1"></div>
-      <a href="/static/safety.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md text-sm text-fg-secondary hover:bg-surface-subtle focus-ring">
-        Safety
-      </a>
-      <a href="/static/audit.html" class="inline-flex items-center gap-2 px-3 h-8 rounded-md text-sm text-fg-secondary hover:bg-surface-subtle focus-ring">
-        Audit
-      </a>
-    </div>
-  </section>
-
-  <!-- ========== TWO-COLUMN: Activity (wide) + Status (narrow) ========== -->
-  <section class="grid lg:grid-cols-3 gap-6">
-
-    <!-- Activity (2/3) -->
-    <div class="lg:col-span-2 bg-white dark:bg-gray-900 hairline rounded-lg overflow-hidden">
-      <div class="flex items-center justify-between px-5 py-3 hairline-b">
-        <h2 class="text-sm font-semibold">Activity</h2>
-        <a href="/static/audit.html" class="text-xs text-fg-secondary hover:text-fg-primary">View all</a>
-      </div>
-
-      <template x-if="loading">
-        <ul class="divide-y divide-border-subtle">
-          <template x-for="i in 5" :key="i">
-            <li class="px-5 py-3 flex items-center gap-3">
-              <div class="w-4 h-4 rounded skeleton"></div>
-              <div class="flex-1 space-y-1.5">
-                <div class="h-3 w-2/3 rounded skeleton"></div>
-                <div class="h-2.5 w-1/3 rounded skeleton"></div>
-              </div>
-              <div class="h-4 w-12 rounded skeleton"></div>
-            </li>
-          </template>
-        </ul>
-      </template>
-
-      <template x-if="!loading && activity.length === 0">
-        <div class="px-5 py-16 flex flex-col items-center text-center">
-          <svg class="w-10 h-10 text-fg-tertiary mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2m6-2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-          <h3 class="text-sm font-semibold mb-1">No activity yet</h3>
-          <p class="text-xs text-fg-secondary max-w-xs mb-4">When you draft, schedule, or auto-engage, the actions show up here.</p>
-          <a href="/static/drafts.html" class="inline-flex items-center gap-1.5 px-3 h-8 rounded-md bg-fg-primary text-white text-xs font-medium hover:bg-black">Write your first post</a>
-        </div>
-      </template>
-
-      <template x-if="!loading && activity.length > 0">
-        <ul class="divide-y divide-border-subtle">
-          <template x-for="(a, i) in activity" :key="i">
-            <li class="px-5 py-3 flex items-center gap-3 hover:bg-surface-hover">
-              <span class="dot" :style="`background: ${statusColor(a.status)}`"></span>
-              <div class="flex-1 min-w-0">
-                <div class="text-sm font-medium truncate" x-text="a.action + ' ' + (a.target || '')"></div>
-                <div class="text-xs text-fg-tertiary" x-text="relTime(a.ts)"></div>
-              </div>
-              <span class="pill" :style="`background: ${statusBg(a.status)}; color: ${statusFg(a.status)}`" x-text="a.status"></span>
-            </li>
-          </template>
-        </ul>
-      </template>
-    </div>
-
-    <!-- Status (1/3) -->
-    <div class="space-y-6">
-      <!-- System health -->
-      <div class="bg-white dark:bg-gray-900 hairline rounded-lg">
-        <div class="px-5 py-3 hairline-b">
-          <h2 class="text-sm font-semibold">System</h2>
-        </div>
-        <ul class="divide-y divide-border-subtle">
-          <li class="px-5 py-3 flex items-center justify-between">
-            <span class="text-sm text-fg-secondary">Cookie</span>
-            <span class="pill" :style="health.cookie ? 'background:#e6f6ec;color:#4cb782' : 'background:#fde8e8;color:#eb5757'" x-text="health.cookie ? 'Valid' : 'Missing'"></span>
-          </li>
-          <li class="px-5 py-3 flex items-center justify-between">
-            <span class="text-sm text-fg-secondary">LLM keys</span>
-            <span class="text-sm font-medium tabular" x-text="health.llm + ' configured'"></span>
-          </li>
-          <li class="px-5 py-3 flex items-center justify-between">
-            <span class="text-sm text-fg-secondary">Schedules</span>
-            <span class="text-sm font-medium tabular" x-text="health.schedules + ' active'"></span>
-          </li>
-          <li class="px-5 py-3 flex items-center justify-between">
-            <span class="text-sm text-fg-secondary">Dead-man</span>
-            <span class="pill" :style="deadmanStyle" x-text="health.deadman || '—'"></span>
-          </li>
-        </ul>
-      </div>
-
-      <!-- Next scheduled -->
-      <div class="bg-white dark:bg-gray-900 hairline rounded-lg">
-        <div class="px-5 py-3 hairline-b flex items-center justify-between">
-          <h2 class="text-sm font-semibold">Next scheduled</h2>
-          <a href="/static/schedules.html" class="text-xs text-fg-secondary hover:text-fg-primary">Manage</a>
-        </div>
-        <div class="px-5 py-4">
-          <template x-if="nextSchedule">
-            <div>
-              <div class="text-sm font-medium mb-1" x-text="nextSchedule.name"></div>
-              <div class="text-xs text-fg-tertiary font-mono" x-text="nextSchedule.cron || nextSchedule.at"></div>
-              <div class="text-xs text-accent mt-2" x-text="nextSchedule.when"></div>
-            </div>
-          </template>
-          <template x-if="!nextSchedule">
-            <div class="text-center py-4">
-              <p class="text-xs text-fg-tertiary mb-3">No upcoming posts.</p>
-              <a href="/static/schedules.html" class="inline-flex items-center gap-1.5 px-3 h-7 rounded-md bg-white dark:bg-gray-900 hairline text-xs font-medium hover:bg-surface-subtle">+ Create schedule</a>
-            </div>
-          </template>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- ========== ONBOARDING (only if setup incomplete) ========== -->
-  <section x-show="needsSetup" x-cloak class="mt-8 bg-white dark:bg-gray-900 hairline rounded-lg">
-    <div class="px-5 py-4 flex items-center justify-between hairline-b">
-      <div class="flex items-center gap-2">
-        <span class="dot" style="background: #c79100"></span>
-        <h2 class="text-sm font-semibold">Setup incomplete</h2>
-      </div>
-      <a href="/static/install.html" class="text-xs text-fg-secondary hover:text-fg-primary">All settings</a>
-    </div>
-    <div class="grid sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border-subtle">
-      <a href="/static/cookies.html" class="px-5 py-4 flex items-start gap-3 hover:bg-surface-hover">
-        <div class="w-7 h-7 rounded-md bg-surface-subtle flex items-center justify-center text-sm font-semibold tabular text-fg-tertiary">1</div>
-        <div>
-          <div class="text-sm font-medium mb-0.5">Connect LinkedIn</div>
-          <div class="text-xs text-fg-tertiary">Add a session cookie</div>
-        </div>
-      </a>
-      <a href="/static/llm.html" class="px-5 py-4 flex items-start gap-3 hover:bg-surface-hover">
-        <div class="w-7 h-7 rounded-md bg-surface-subtle flex items-center justify-center text-sm font-semibold tabular text-fg-tertiary">2</div>
-        <div>
-          <div class="text-sm font-medium mb-0.5">Add LLM key</div>
-          <div class="text-xs text-fg-tertiary">For post drafting</div>
-        </div>
-      </a>
-      <a href="/static/install.html" class="px-5 py-4 flex items-start gap-3 hover:bg-surface-hover">
-        <div class="w-7 h-7 rounded-md bg-surface-subtle flex items-center justify-center text-sm font-semibold tabular text-fg-tertiary">3</div>
-        <div>
-          <div class="text-sm font-medium mb-0.5">Install to agent</div>
-          <div class="text-xs text-fg-tertiary">Claude / Cursor / etc.</div>
-        </div>
-      </a>
-    </div>
-  </section>
-
-  <!-- ========== FOOTER ========== -->
-  <footer class="mt-12 pt-6 hairline-t">
-    <div class="flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-fg-tertiary">
-      <div class="flex items-center gap-4">
-        <a href="https://github.com/horizonbymuneeb/linkedin-mcp-pro" class="hover:text-fg-primary">GitHub</a>
-        <a href="/static/safety.html" class="hover:text-fg-primary">Safety</a>
-        <a href="/static/audit.html" class="hover:text-fg-primary">Audit</a>
-        <a href="/static/install.html" class="hover:text-fg-primary">Install</a>
-      </div>
-      <div>MIT · <span x-text="'v' + (version || '…')"></span> · linkedin-mcp-pro</div>
-    </div>
-  </footer>
-</main>
-
-<script>
-async function jget(url) {
-  const r = await fetch(url);
-  if (!r.ok) throw new Error(await r.text());
-  return r.json();
-}
-
-function relTime(iso) {
-  if (!iso) return '';
-  const d = (typeof iso === 'number') ? new Date(iso * 1000) : new Date(iso);
-  const diff = (Date.now() - d.getTime()) / 1000;
-  if (diff < 60) return Math.floor(diff) + 's ago';
-  if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-  if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-  return Math.floor(diff/86400) + 'd ago';
-}
-
-const STATUS_COLORS = {
-  success: { bg: '#e6f6ec', fg: '#4cb782', dot: '#4cb782' },
-  dry_run: { bg: '#eef0fb', fg: '#5e6ad2', dot: '#5e6ad2' },
-  failure: { bg: '#fde8e8', fg: '#eb5757', dot: '#eb5757' },
-  pending: { bg: '#f5f5f5', fg: '#8a8a8a', dot: '#8a8a8a' },
-};
-
-function statusBg(s) { return (STATUS_COLORS[s] || STATUS_COLORS.pending).bg; }
-function statusFg(s) { return (STATUS_COLORS[s] || STATUS_COLORS.pending).fg; }
-function statusColor(s) { return (STATUS_COLORS[s] || STATUS_COLORS.pending).dot; }
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 12) return 'Good morning, Muneeb';
-  if (h < 18) return 'Good afternoon, Muneeb';
-  return 'Good evening, Muneeb';
-}
-
-document.addEventListener('alpine:init', () => {
-  Alpine.data('cockpit', () => ({
-    dark: document.documentElement.classList.contains('dark'),
-    loading: true,
-    version: '…',
-    summary: null,
-    schedules: [],
-    activity: [],
-    health: { cookie: false, llm: 0, schedules: 0, deadman: null },
-    needsSetup: false,
-    get greeting() { return greeting(); },
-    get metaLine() {
-      if (this.health.cookie && this.health.llm > 0) {
-        return `${this.health.schedules} active schedules · ${this.health.llm} LLM providers configured`;
-      }
-      if (!this.health.cookie) return 'Connect your LinkedIn cookie to get started.';
-      return 'Add an LLM API key to enable post drafting.';
-    },
-    get nextSchedule() {
-      if (!this.schedules || this.schedules.length === 0) return null;
-      return this.schedules[0];
-    },
-    get deadmanStyle() {
-      const s = this.health.deadman;
-      if (s === 'ok' || s === 'OK') return 'background:#e6f6ec;color:#4cb782';
-      if (s === 'warning' || s === 'alert') return 'background:#fef7e0;color:#c79100';
-      return 'background:#f5f5f5;color:#8a8a8a';
-    },
-    trendClass(metric) {
-      // mock — wire up to real data
-      return 'text-fg-tertiary';
-    },
-    trendLabel(metric) {
-      const map = { posts: 'this week', engagements: 'this week', success: 'last 30d' };
-      return map[metric] || '';
-    },
-    toggleDark() {
-      this.dark = !this.dark;
-      document.documentElement.classList.toggle('dark', this.dark);
-      localStorage.setItem('theme', this.dark ? 'dark' : 'light');
-    },
-    async init() {
-      try {
-        const [v, summary, deadman, schedules, llm] = await Promise.allSettled([
-          jget('/api/version'),
-          jget('/api/summary?days=30'),
-          jget('/api/deadman'),
-          jget('/api/schedules'),
-          jget('/api/llm/providers').catch(() => ({providers: {}})),
-        ]);
-        if (v.status === 'fulfilled') this.version = v.value.version;
-        if (summary.status === 'fulfilled') this.summary = summary.value;
-        if (deadman.status === 'fulfilled') this.health.deadman = deadman.value.status;
-        if (schedules.status === 'fulfilled') this.schedules = schedules.value || [];
-        if (llm.status === 'fulfilled') {
-          const p = llm.value.providers || {};
-          this.health.llm = Object.values(p).filter(x => x.is_configured).length;
-        }
-        this.health.cookie = await this.checkCookie();
-        this.health.schedules = this.schedules.filter(s => s.enabled).length;
-        this.needsSetup = !this.health.cookie || this.health.llm === 0;
-      } catch (e) { console.warn('init', e); }
-      finally { this.loading = false; }
-    },
-    async checkCookie() {
-      try {
-        const r = await fetch('/static/cookies.html', {method: 'HEAD'});
-        return r.ok;
-      } catch (e) { return false; }
-    },
-  }));
-});
-</script>
-
 </body>
 </html>

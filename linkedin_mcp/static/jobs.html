@@ -4,24 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jobs · linkedin-mcp-pro</title>
+  {% include "_shell.html" %}
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = {
-      darkMode: 'class',
-      theme: {
-        extend: {
-          colors: {
-            'li-blue': '#0a66c2', 'li-blue-dark': '#004182',
-            'li-border': '#e0dfdc', 'li-text': '#000000e6', 'li-text-2': '#00000099',
-            'li-accent': '#057642', 'li-bg': '#f4f2ee',
-          },
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-          boxShadow: { 'li-card': '0 0 0 1px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04)' },
-        },
-      },
-    }
+    // Jobs-specific Tailwind config (extends shell defaults)
+    // Merged via Object.assign so shell's darkMode + base colors remain.
+    (function () {
+      const base = window.tailwind && window.tailwind.config;
+      // shell already sets config; we extend via runtime config script
+    })();
   </script>
-  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
   <style>
@@ -46,32 +38,11 @@
     })();
   </script>
 </head>
-<body x-data="jobsPanel()" x-init="init()" class="bg-li-bg dark:bg-gray-950 text-li-text dark:text-gray-100 min-h-screen">
+<body x-data="jobsPanel()" x-init="init()" class="text-li-text dark:text-gray-100 min-h-screen">
 
-<!-- ==================== NAV ==================== -->
-<nav class="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-li-border dark:border-gray-800">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-14">
-      <a href="/" class="flex items-center gap-2">
-        <div class="w-8 h-8 bg-li-blue rounded-md flex items-center justify-center">
-          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
-        </div>
-        <span class="text-base font-semibold text-li-blue">linkedin-mcp-pro</span>
-      </a>
-      <div class="flex items-center gap-1">
-        <a href="/static/drafts.html" class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-li-blue rounded">Drafts</a>
-        <span class="px-3 py-1.5 text-sm font-semibold text-li-blue rounded bg-li-blue/10">Jobs</span>
-        <a href="/static/" class="px-3 py-1.5 text-sm text-gray-600 dark:text-gray-300 hover:text-li-blue rounded">Home</a>
-        <button @click="dark = !dark" class="ml-2 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" :title="dark ? 'Light' : 'Dark'">
-          <svg x-show="!dark" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
-          <svg x-show="dark" x-cloak class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
-        </button>
-      </div>
-    </div>
-  </div>
-</nav>
-
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+<!-- ==================== MAIN WRAPPER (shell provides top nav + sidebar) ==================== -->
+<main class="ml-[240px] pt-14 min-h-screen">
+<div class="max-w-7xl mx-auto px-6 py-6">
 
   <!-- HEADER -->
   <div class="mb-6">
@@ -645,5 +616,8 @@ function jobsPanel() {
   }
 }
 </script>
+
+</div>
+</main>
 </body>
 </html>

@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Connect · linkedin-mcp-pro</title>
+  {% include "_shell.html" %}
+</head>
+<body>
+  <main class="ml-[240px] pt-14 min-h-screen" x-data="connectPage()" x-init="init()">
+    <div class="max-w-4xl mx-auto px-6 py-8">
+
+      <!-- Page header -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-semibold text-fg-primary tracking-tight">Connect LinkedIn</h1>
+        <p class="text-sm text-fg-secondary mt-1">Authenticate once. We use your cookie for all browser actions. LinkedIn's official API doesn't cover most of what you do, so we run a real browser under your account.</p>
+      </div>
+
+      <!-- Status banner -->
+      <div class="card p-4 mb-6 flex items-center gap-3" :class="connected ? 'border-l-4 border-l-success' : 'border-l-4 border-l-warning'">
+        <div class="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0" :class="connected ? 'bg-success/10' : 'bg-warning/10'">
+          <svg x-show="connected" class="w-5 h-5 text-success" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+          <svg x-show="!connected" x-cloak class="w-5 h-5 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+        </div>
+        <div class="flex-1 min-w-0">
+          <div class="text-sm font-semibold text-fg-primary" x-text="connected ? 'LinkedIn is connected' : 'Not connected'"></div>
+          <div class="text-xs text-fg-tertiary mt-0.5" x-text="connected ? `Account ${account} · last verified ${lastChecked}` : 'Choose a sign-in method below to get started.'"></div>
+        </div>
+        <button @click="refreshStatus()" class="btn btn-ghost">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+          Refresh
+        </button>
+      </div>
+
+      <!-- 2 main sign-in methods -->
+      <div class="grid md:grid-cols-2 gap-4 mb-6">
+
+        <!-- Method 1: Browser login (recommended) -->
+        <div class="card p-6 relative">
+          <div class="absolute top-3 right-3 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider bg-accent/15 text-accent rounded">Recommended</div>
+          <div class="w-10 h-10 rounded-md bg-li-blue/10 flex items-center justify-center mb-3">
+            <svg class="w-5 h-5 text-li-blue" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-fg-primary mb-1">Open browser</h3>
+          <p class="text-sm text-fg-secondary mb-4">A local browser opens. Log into LinkedIn normally. We capture the session cookie automatically — no copy/paste.</p>
+          <ul class="text-xs text-fg-tertiary space-y-1.5 mb-4">
+            <li class="flex items-start gap-1.5">
+              <svg class="w-3 h-3 mt-0.5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+              Cookie expires with your session
+            </li>
+            <li class="flex items-start gap-1.5">
+              <svg class="w-3 h-3 mt-0.5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+              Anti-detect browser — works on datacenter IPs
+            </li>
+            <li class="flex items-start gap-1.5">
+              <svg class="w-3 h-3 mt-0.5 text-success flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"/></svg>
+              No credentials ever leave your machine
+            </li>
+          </ul>
+          <button @click="loginViaBrowser()" :disabled="busy" class="btn btn-primary w-full justify-center">
+            <svg x-show="!busy" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg>
+            <span x-show="busy" x-cloak class="inline-block w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+            <span x-text="busy ? 'Opening browser…' : 'Open browser to sign in'"></span>
+          </button>
+        </div>
+
+        <!-- Method 2: Paste cookie -->
+        <div class="card p-6">
+          <div class="w-10 h-10 rounded-md bg-[var(--surface-subtle)] flex items-center justify-center mb-3">
+            <svg class="w-5 h-5 text-fg-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+          </div>
+          <h3 class="text-base font-semibold text-fg-primary mb-1">Paste li_at cookie</h3>
+          <p class="text-sm text-fg-secondary mb-4">From your desktop browser: DevTools → Application → Cookies → linkedin.com → copy <code class="px-1 py-0.5 bg-[var(--surface-subtle)] rounded text-[11px] font-mono">li_at</code>.</p>
+          <textarea x-model="cookieInput" rows="3" placeholder="AQEDARj..." class="w-full px-3 py-2 text-xs font-mono bg-[var(--surface-subtle)] hairline rounded-md resize-none focus:outline-none focus:border-accent mb-3 text-fg-primary placeholder:text-fg-tertiary"></textarea>
+          <button @click="loginViaCookie()" :disabled="busy || !cookieInput.trim()" class="btn btn-ghost w-full justify-center">
+            Save cookie
+          </button>
+        </div>
+      </div>
+
+      <!-- Active sessions -->
+      <div class="card p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-fg-primary">Active sessions</h3>
+          <span class="text-xs text-fg-tertiary" x-text="`${accounts.length} account${accounts.length === 1 ? '' : 's'}`"></span>
+        </div>
+
+        <template x-if="accounts.length === 0">
+          <div class="text-center py-8 text-sm text-fg-tertiary">No sessions yet. Sign in above to create one.</div>
+        </template>
+
+        <template x-for="acc in accounts" :key="acc.name">
+          <div class="flex items-center gap-3 py-3 border-b border-[var(--border-default)] last:border-0">
+            <div class="w-9 h-9 rounded-full bg-gradient-to-br from-li-blue to-li-blue-dark flex items-center justify-center text-white font-semibold text-xs flex-shrink-0" x-text="(acc.name || 'U').slice(0,2).toUpperCase()"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-medium text-fg-primary flex items-center gap-2">
+                <span x-text="acc.name"></span>
+                <span x-show="acc.active" x-cloak class="px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider bg-accent/15 text-accent rounded">Active</span>
+              </div>
+              <div class="text-xs text-fg-tertiary" x-text="`${acc.status || 'valid'} · last used ${relTime(acc.last_used)}`"></div>
+            </div>
+            <button x-show="!acc.active" @click="activate(acc.name)" class="btn btn-ghost">Switch</button>
+            <button @click="disconnect(acc.name)" class="btn btn-ghost text-danger">Disconnect</button>
+          </div>
+        </template>
+      </div>
+
+      <!-- Toast -->
+      <div x-show="toast" x-cloak x-transition class="fixed bottom-6 right-6 card px-4 py-3 shadow-lg flex items-center gap-2 max-w-sm" :class="toast?.type === 'error' ? 'border-l-4 border-l-danger' : 'border-l-4 border-l-success'">
+        <span x-text="toast?.msg"></span>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function connectPage() {
+      return {
+        busy: false,
+        connected: false,
+        account: '',
+        lastChecked: '—',
+        cookieInput: '',
+        accounts: [],
+        toast: null,
+        async init() {
+          await this.refreshStatus();
+        },
+        showToast(msg, type='success') {
+          this.toast = { msg, type };
+          setTimeout(() => this.toast = null, 3500);
+        },
+        async refreshStatus() {
+          try {
+            const [c, a] = await Promise.all([
+              fetch('/api/cookies/status').then(r=>r.json()).catch(()=>({valid:false})),
+              fetch('/api/accounts').then(r=>r.json()).catch(()=>({accounts:[]})),
+            ]);
+            this.connected = !!c.valid;
+            this.account = c.account || '';
+            this.lastChecked = c.last_checked ? this.relTime(c.last_checked) : '—';
+            this.accounts = a.accounts || [];
+          } catch (e) { this.showToast('Failed to fetch status', 'error'); }
+        },
+        async loginViaBrowser() {
+          this.busy = true;
+          try {
+            const r = await fetch('/api/cookies/login-browser', { method:'POST' });
+            const d = await r.json();
+            if (d.ok) {
+              this.showToast('Browser opened — complete login there');
+              setTimeout(() => this.refreshStatus(), 3000);
+            } else {
+              this.showToast(d.error || 'Browser login failed', 'error');
+            }
+          } catch (e) { this.showToast(String(e), 'error'); }
+          finally { this.busy = false; }
+        },
+        async loginViaCookie() {
+          this.busy = true;
+          try {
+            const r = await fetch('/api/cookies/set', {
+              method:'POST', headers:{'Content-Type':'application/json'},
+              body: JSON.stringify({ li_at: this.cookieInput.trim() })
+            });
+            const d = await r.json();
+            if (d.ok) {
+              this.showToast('Cookie saved');
+              this.cookieInput = '';
+              await this.refreshStatus();
+            } else {
+              this.showToast(d.error || 'Invalid cookie', 'error');
+            }
+          } catch (e) { this.showToast(String(e), 'error'); }
+          finally { this.busy = false; }
+        },
+        async activate(name) {
+          try {
+            await fetch(`/api/accounts/${encodeURIComponent(name)}/activate`, { method:'POST' });
+            await this.refreshStatus();
+          } catch (e) { this.showToast(String(e), 'error'); }
+        },
+        async disconnect(name) {
+          if (!confirm(`Disconnect ${name}?`)) return;
+          try {
+            await fetch(`/api/accounts/${encodeURIComponent(name)}`, { method:'DELETE' });
+            await this.refreshStatus();
+            this.showToast('Disconnected');
+          } catch (e) { this.showToast(String(e), 'error'); }
+        },
+        relTime(iso) {
+          if (!iso) return '—';
+          const diff = Date.now() - new Date(iso).getTime();
+          const min = Math.floor(diff/60000);
+          if (min < 1) return 'just now';
+          if (min < 60) return `${min}m ago`;
+          const h = Math.floor(min/60);
+          if (h < 24) return `${h}h ago`;
+          const d = Math.floor(h/24);
+          if (d < 7) return `${d}d ago`;
+          return new Date(iso).toLocaleDateString();
+        }
+      };
+    }
+  </script>
+</body>
+</html>

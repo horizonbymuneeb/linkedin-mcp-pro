@@ -3,6 +3,35 @@
 All notable changes to **linkedin-mcp-pro** are documented here.
 This format follows [Keep a Changelog](https://keepachangelog.com/) and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.3.0] - 2026-06-19
+
+### Added
+- **Unified app shell** (`static/_shell.html`) — sidebar (Workspace / Account / Configure sections) + topbar with search, theme toggle, settings, user avatar. Every page now renders inside the shell via a new `<main class="ml-[240px] pt-14">` wrapper.
+- **`web.py` static-page routes** — added `_render_static()` helper that resolves `{% include "_shell.html" %}` placeholders without pulling Jinja into the project. 14 page routes registered (`/jobs`, `/drafts`, `/connect`, `/cookies`, `/schedules`, `/engagement`, `/analytics`, `/llm`, `/safety`, `/audit`, `/install`, `/settings`, `/templates`, `/profile`).
+- **Connect page** (`static/connect.html`) — new LinkedIn login + cookies UI: two-method sign-in (open browser / paste `li_at`), active sessions list with switch/disconnect, status banner. Linear-style cards with accent-colored "Recommended" badge.
+- **Home dashboard rewrite** (`static/index.html`) — KPI cards (posts / engagements / applications / server), recent activity feed, system status, setup checklist, quick action buttons. Alpine.js fetches from `/api/version`, `/api/summary`, `/api/audit` so it's live.
+- **Design system** — Linear-inspired shell (Inter font, hairline borders, indigo accent `#5e6ad2`, 8px grid) layered with LinkedIn-style content cards (`#0a66c2`, `#f4f2ee` warm grey). Light + dark mode both wired.
+- **Pico-class fallbacks** in shell — `.card`, `.grid`, `.pill`, `.ok`, `.warn`, `.alert`, `.stat`, `.sub`, plus themed `button` / `input` / `table` / `pre` / `code` / `details` so legacy Pico-CSS class names keep looking right.
+- **Internal scripts** (`static/_migrate_shell.py`, `static/_fix_nav.py`) — idempotent helpers for re-applying the shell to new pages and stripping legacy top-nav blocks.
+
+### Changed
+- All 14 existing pages migrated to the shell (`{% include "_shell.html" %}`, header tokens, sidebar-aware main wrapper, no more per-page top sticky navs).
+- **`web.py`** — added `re` import, `HTTPException` already in use; new `_render_static()` plus a routes loop registered at module import. Total web.py grew 1166 → 1290 lines.
+- **`jobs.html`** — replaced legacy top-nav with shell; stripped redundant Tailwind config block; preserves all Alpine `jobsPanel()` state.
+- **`drafts.html`** — same migration; LinkedIn composer + preview still functional.
+- **`safety.html`** — removed legacy `<nav class="sticky top-0">` and inner `<main>`; kept gradient hero and Alpine `safetyPanel()`.
+
+### Fixed
+- Sidebar server-status widget no longer overlaps nav items (now sits in its own bordered footer section).
+- Duplicate Tailwind/Alpine script loads on `jobs.html` and `drafts.html` (shell provides them).
+- Raw code leak in `analytics.html` ("load()) ..." attach).
+- Double `<main>` issue across pages.
+
+### Tests
+- 715 tests passing (6 pre-existing failures in `test_browser.py` require a real LinkedIn browser session — unrelated to UI work).
+
+---
+
 ## [2.2.0] - 2026-06-19
 
 ### Added

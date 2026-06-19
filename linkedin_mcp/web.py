@@ -18,6 +18,7 @@ from __future__ import annotations
 import logging
 import os
 from datetime import datetime, timezone
+import re
 from pathlib import Path
 from typing import Any, Optional
 
@@ -1157,11 +1158,13 @@ def dashboard() -> HTMLResponse:
     """Serve the new Tailwind+Alpine dashboard from static/index.html.
 
     Falls back to the legacy inline dashboard if the file is missing.
-    Sends no-cache headers so updates show on next reload.
+    Resolves {% include "_shell.html" %} placeholders by reading the file
+    so we don't pull Jinja into the project. Sends no-cache headers so
+    updates show on next reload.
     """
     index_file = _static_dir / "index.html"
     if index_file.exists():
-        body = index_file.read_text(encoding="utf-8")
+        body = _render_static(index_file)
     else:
         body = _DASHBOARD_HTML
     headers = {
@@ -1170,6 +1173,71 @@ def dashboard() -> HTMLResponse:
         "Expires": "0",
     }
     return HTMLResponse(content=body, headers=headers)
+
+
+def _render_static(path: Path) -> str:
+    """Read a static HTML file and resolve {% include "name.html" %} placeholders.
+
+    We avoid pulling Jinja into the project for what is currently a single
+    include (the app shell). Supports up to 2 levels of nesting so a page
+    can include _shell.html which itself includes nothing.
+    """
+    body = path.read_text(encoding="utf-8")
+    pattern = re.compile(r'\{%\s*include\s+"([^"]+)"\s*%\}')
+
+    def _resolve(match: re.Match) -> str:
+        include_name = match.group(1)
+        include_path = _static_dir / include_name
+        if not include_path.exists():
+            return ""
+        return include_path.read_text(encoding="utf-8")
+
+    # Two passes so nested includes (if any) also resolve.
+    body = pattern.sub(_resolve, body)
+    body = pattern.sub(_resolve, body)
+    return body
+
+
+# ----------------------------------------------------------------------------
+# Static page routes — serve every HTML page through _render_static so the
+# {% include "_shell.html" %} placeholder resolves consistently. Without
+# these, FastAPI's StaticFiles would serve the raw file with the literal
+# {% include ... %} still in the markup.
+# ----------------------------------------------------------------------------
+_STATIC_PAGES = (
+    "drafts", "schedules", "engagement", "jobs", "analytics",
+    "connect", "cookies", "profile", "llm", "safety", "audit",
+    "install", "settings", "templates",
+)
+
+for _page in _STATIC_PAGES:
+    _page_file = _static_dir / f"{_page}.html"
+    if not _page_file.exists():
+        continue
+
+    def _make_handler(filename: str):
+        def _handler() -> HTMLResponse:
+            page_file = _static_dir / filename
+            if not page_file.exists():
+                raise HTTPException(status_code=404, detail=f"{filename} not found")
+            body = _render_static(page_file)
+            return HTMLResponse(
+                content=body,
+                headers={
+                    "Cache-Control": "no-cache, no-store, must-revalidate",
+                    "Pragma": "no-cache",
+                    "Expires": "0",
+                },
+            )
+        return _handler
+
+    app.add_api_route(
+        f"/{_page}",
+        _make_handler(f"{_page}.html"),
+        methods=["GET"],
+        response_class=HTMLResponse,
+        include_in_schema=False,
+    )
 
 
 def main() -> None:
