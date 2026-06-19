@@ -186,10 +186,13 @@ async function setLiAt() {
   status.innerHTML = '⏳ saving and testing...';
   try {
     const r = await jpost('/api/cookies/li_at', {value, note: 'set via web UI'});
+    const pathInfo = r.wrote.fallback_used
+      ? `<span class="warn">⚠ fallback path used</span> written to <code>${r.wrote.path}</code> (requested <code>${r.wrote.requested_path}</code> not writable)`
+      : `saved to <code>${r.wrote.path}</code> (${r.wrote.bytes}B, mode ${r.wrote.mode})`;
     if (r.health.is_logged_in) {
-      status.innerHTML = `<span class="ok">✓ Saved + login verified! (${r.health.elapsed_ms}ms, title: "${r.health.title}")</span>`;
+      status.innerHTML = `<span class="ok">✓ Saved + login verified!</span> (${r.health.elapsed_ms}ms, title: "${r.health.title}")<br><small>${pathInfo}</small>`;
     } else {
-      status.innerHTML = `<span class="warn">⚠ Saved but login check failed: HTTP ${r.health.http_status} title="${r.health.title}"</span>`;
+      status.innerHTML = `<span class="warn">⚠ Saved but login check failed: HTTP ${r.health.http_status} title="${r.health.title}"</span><br><small>${pathInfo}</small>`;
     }
     loadHealth(); loadCookies();
   } catch (e) {

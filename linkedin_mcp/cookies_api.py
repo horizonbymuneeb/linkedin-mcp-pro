@@ -10,9 +10,9 @@ Provides:
   POST /api/login/cancel         — cancel in-progress login
   GET  /api/profile/health       — combined: cookie age + LinkedIn reachability
 
-Cookie file paths (env-overridable):
-  LI_AT_FILE    (default /etc/linkedin-mcp-pro/li_at)
-  PROFILE_DIR   (default /home/admin/.linkedin-mcp/profile)
+Cookie + login file paths (env-overridable):
+  LI_AT_FILE    default: $XDG_DATA_HOME/linkedin-mcp-pro/li_at (falls back to ~/.local/share/linkedin-mcp-pro/li_at)
+  PROFILE_DIR   default: ~/.linkedin-mcp/profile
 """
 from __future__ import annotations
 
@@ -35,6 +35,17 @@ from .config import load_config
 log = logging.getLogger("linkedin_mcp.cookies_api")
 
 router = APIRouter()
+
+
+def _user_data_dir() -> Path:
+    """Resolve user-writable data dir (XDG-aware, never /etc).
+
+    Used as fallback when LI_AT_FILE / PROFILE_DIR env overrides point to
+    non-writable paths (e.g. the legacy /etc/... default from older builds).
+    """
+    xdg = os.environ.get("XDG_DATA_HOME", "").strip()
+    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return base / "linkedin-mcp-pro"
 
 # ---------------------------------------------------------------------------
 # In-memory login state (single-process; fine for typical usage)
@@ -70,13 +81,27 @@ class CookieImport(BaseModel):
 
 
 def _li_at_path() -> Path:
-    p = os.environ.get("LI_AT_FILE", "/etc/linkedin-mcp-pro/li_at")
-    return Path(p)
+    """Resolve li_at file path.
+
+    Priority:
+      1. $LI_AT_FILE env (if set and writable / parent creatable)
+      2. $XDG_DATA_HOME/linkedin-mcp-pro/li_at
+      3. ~/.local/share/linkedin-mcp-pro/li_at
+
+    Never defaults to /etc/... — those paths are reserved for system packages
+    and would fail with PermissionError for non-root users.
+    """
+    explicit = os.environ.get("LI_AT_FILE", "").strip()
+    if explicit:
+        return Path(explicit)
+    return _user_data_dir() / "li_at"
 
 
 def _profile_dir() -> Path:
-    p = os.environ.get("LINKEDIN_MCP_PROFILE_DIR", "/home/admin/.linkedin-mcp/profile")
-    return Path(p)
+    p = os.environ.get("LINKEDIN_MCP_PROFILE_DIR", "").strip()
+    if p:
+        return Path(p)
+    return Path.home() / ".linkedin-mcp" / "profile"
 
 
 def _storage_state_path() -> Path:
@@ -102,21 +127,62 @@ def _read_li_at() -> Optional[str]:
 
 
 def _write_li_at(value: str, note: str = "") -> dict[str, Any]:
-    """Write li_at to disk (0600 perms) + log audit row."""
-    p = _li_at_path()
-    p.parent.mkdir(parents=True, exist_ok=True)
-    p.write_text(value.strip())
+    """Write li_at to disk (0600 perms) + log audit row.
+
+    Falls back transparently to $XDG_DATA_HOME/linkedin-mcp-pro/li_at if the
+    configured LI_AT_FILE path is not writable (e.g. legacy /etc/... default).
+    Raises HTTPException(500) with a safe message (no secret leakage) on
+    unrecoverable failure.
+    """
+    requested = _li_at_path()
+    fallback_used = False
+
+    # Try requested path first
     try:
-        os.chmod(p, 0o600)
-    except Exception:
-        pass
+        requested.parent.mkdir(parents=True, exist_ok=True)
+        test = requested.parent / ".write_test_linkedin_mcp"
+        test.touch()
+        test.unlink()
+        target = requested
+    except (PermissionError, OSError) as e:
+        # Fall back to user-writable data dir
+        target = _user_data_dir() / "li_at"
+        fallback_used = True
+        log.warning(
+            "li_at write to %s failed (%s); falling back to %s",
+            requested, e, target,
+        )
+        try:
+            target.parent.mkdir(parents=True, exist_ok=True)
+        except Exception as e2:
+            log.error("li_at fallback mkdir also failed: %s", e2)
+            raise HTTPException(
+                status_code=500,
+                detail=f"Cannot write li_at file: tried {requested} and {target}",
+            )
+
+    try:
+        target.write_text(value.strip())
+        try:
+            os.chmod(target, 0o600)
+        except Exception:
+            pass
+    except Exception as e:
+        log.error("li_at write failed at %s: %s", target, e)
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to write li_at to {target}: {type(e).__name__}",
+        )
+
     # Also update env for this process + audit
     os.environ["LI_AT"] = value.strip()
-    log.info("li_at updated via web UI (note=%r)", note)
+    log.info("li_at updated via web UI (note=%r, path=%s)", note, target)
     return {
-        "path": str(p),
-        "bytes": p.stat().st_size,
-        "mode": oct(p.stat().st_mode & 0o777),
+        "path": str(target),
+        "fallback_used": fallback_used,
+        "requested_path": str(requested),
+        "bytes": target.stat().st_size,
+        "mode": oct(target.stat().st_mode & 0o777),
         "updated_at": datetime.now(timezone.utc).isoformat(),
     }
 
@@ -259,7 +325,11 @@ def api_cookies_health() -> dict[str, Any]:
 
 @router.post("/api/cookies/li_at")
 def api_cookies_set_li_at(p: LiAtPayload) -> dict[str, Any]:
-    """Replace li_at value. Writes file (0600), updates env, returns health check."""
+    """Replace li_at value. Writes file (0600), updates env, returns health check.
+
+    On filesystem permission errors, _write_li_at transparently falls back to
+    $XDG_DATA_HOME/linkedin-mcp-pro/li_at (per-user, never /etc/...).
+    """
     if not p.value or len(p.value) < 50:
         raise HTTPException(status_code=400, detail="li_at too short (min 50 chars)")
     if len(p.value) > 500:
