@@ -3,6 +3,34 @@
 All notable changes to **linkedin-mcp-pro** are documented here.
 This format follows [Keep a Changelog](https://keepachangelog.com/) and the project adheres to [Semantic Versioning](https://semver.org/).
 
+## [2.1.0] - 2026-06-19
+
+### Added
+- **10 missing API endpoints** wired up to fix all non-functional UI panels:
+  - `GET /api/accounts`, `GET /api/accounts/` — list linked accounts
+  - `GET /api/profile` — current profile (name, headline, summary, posts, connections)
+  - `GET /api/audit` — last 100 audit events (filterable by status / action)
+  - `GET /api/safety/status` — flat dict merged via `Object.assign` on frontend (kpis, hours, whitelist, blacklist)
+  - `POST /api/safety/test` — evaluate a sample action against safety rules
+  - `GET /api/engagement/`, `GET /api/engagement` — 30-day engagement stats
+  - `POST /api/engagement/{kind}` — likes / comments / connects with dry-run support
+  - `POST /api/cache/clear` — wipe session_state cache + `functools.lru_cache` in hot modules
+  - `POST /api/server/restart` — schedule restart (systemd or in-process)
+  - `POST /api/settings/reset` — scope-limited config reset (all / ui / llm / safety)
+  - `POST /api/accounts/{id}/activate` — switch active account (profile panel)
+- **Drafts composer rewrite** (Linear + LinkedIn feel) — 3 tabs (Compose / Templates / Recent), rich-text editor with B/I/U, lists, emoji, link, hashtag, mention toolbar, live LinkedIn-feed preview card, character counter ring (color-coded: blue/amber/red), per-save autosave to localStorage, save templates, search, delete with confirm, schedule post, toast notifications, words/lines/hashtags/mentions/read-time stats
+
+### Changed
+- Web UI: drafts page redesigned end-to-end (LinkedIn feed-style preview card with profile header, engagement bar, like/comment/repost/send row)
+- Tests: 18 new tests for the 10 new endpoints (704 total, was 686)
+
+### Total
+- 704 tests passing
+- 31 web endpoints
+- 54 MCP tools
+
+---
+
 ## [2.0.0] - 2026-06-19
 
 ### Added

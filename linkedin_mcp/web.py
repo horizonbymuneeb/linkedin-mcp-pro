@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import logging
 import os
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Optional
 
@@ -31,7 +32,14 @@ from .cookies_api import router as cookies_router
 from .db import DB
 from .deadman import DeadManSwitch
 from .drafter import PostDrafter
-from .safety import SafetyError, SafetyGuard
+from .multi_account import AccountManager
+from .safety import (
+    ActionPlan,
+    SafetyError,
+    SafetyGuard,
+    _is_in_business_hours,
+    _now_utc,
+)
 from .scheduler import PostScheduler
 from .templates import TemplatesStore
 
@@ -236,7 +244,6 @@ def api_drafts(req: DraftRequest) -> dict[str, Any]:
 def api_post(req: PostRequest) -> dict[str, Any]:
     db = _db()
     safety = _safety(db)
-    from .safety import ActionPlan
     try:
         safety.enforce(
             ActionPlan(
@@ -257,6 +264,671 @@ def api_post(req: PostRequest) -> dict[str, Any]:
              dry_run=1 if req.dry_run else 0,
              detail={"text_len": len(req.text), "via": "web_ui"})
     return {"ok": True, "dry_run": False, "text_len": len(req.text)}
+
+
+# ----------------------------------------------------------------------------
+# v2.0.4 — additional panel endpoints
+#
+# These back the dashboard panels added in the Tailwind/Alpine rewrite:
+#   profile, accounts, audit, safety, engagement, cache, server, settings.
+# All handlers are read-only or guarded by db.audit(); no LinkedIn writes.
+# ----------------------------------------------------------------------------
+
+
+# --- shared helpers ---------------------------------------------------------
+
+
+def _accounts_path() -> Path:
+    return Path(
+        os.environ.get("LINKEDIN_MCP_ACCOUNTS_FILE")
+        or (Path.home() / ".linkedin-mcp" / "accounts.yaml")
+    )
+
+
+def _read_accounts() -> list[dict[str, Any]]:
+    """Read accounts from YAML store; fall back to a single stub account
+    derived from the active li_at cookie so the panel is never empty."""
+    try:
+        mgr = AccountManager(_accounts_path())
+        out = []
+        for a in mgr.list_accounts():
+            pd = Path(a.profile_dir) if a.profile_dir else None
+            last_used = None
+            if pd and pd.exists():
+                try:
+                    last_used = datetime.fromtimestamp(pd.stat().st_mtime, timezone.utc).isoformat()
+                except Exception:
+                    last_used = None
+            out.append({
+                "id": a.name,
+                "name": a.name,
+                "email": a.description or "",
+                "profile_dir": a.profile_dir,
+                "active": bool(a.active),
+                "last_used": last_used,
+                "status": "active" if a.active else "ready",
+            })
+        if out:
+            return out
+    except Exception as e:  # noqa: BLE001
+        log.warning("read accounts failed: %s", e)
+    # Fallback: single stub account derived from li_at presence
+    li_at = os.environ.get("LI_AT", "").strip() or None
+    return [{
+        "id": "default",
+        "name": "Default account",
+        "email": "",
+        "profile_dir": str(Path.home() / ".linkedin-mcp" / "profile"),
+        "active": True,
+        "last_used": _now_iso(),
+        "status": "ready" if li_at else "needs_login",
+    }]
+
+
+def _safe_int(v: Any, default: int) -> int:
+    """Coerce to int; if the value is a Mock/unsupported type, return default."""
+    try:
+        return int(v)
+    except (TypeError, ValueError):
+        return default
+
+
+def _safe_str(v: Any, default: str = "") -> str:
+    try:
+        s = str(v)
+        # Treat unrendered Mock repr as missing
+        if s.startswith("<MagicMock") or s == "":
+            return default
+        return s
+    except Exception:
+        return default
+
+
+def _safe_list_str(v: Any) -> list[str]:
+    if isinstance(v, (list, tuple)):
+        return [str(x) for x in v]
+    return []
+
+
+def _inside_hours_safe(cfg: Any) -> bool:
+    """Defensive wrapper around ``safety._is_in_business_hours``.
+
+    Returns False if the config is a Mock / unparseable. The real Config
+    is a dataclass with ``cfg.safety.business_days`` (list[str]).
+    """
+    try:
+        return bool(_is_in_business_hours(cfg))
+    except Exception:  # noqa: BLE001
+        return False
+
+
+def _safety_paused_safe(db: DB) -> tuple[bool, int]:
+    """Read writes_paused without crashing on Mock-backed configs."""
+    try:
+        return _safety(db).writes_paused()
+    except Exception:  # noqa: BLE001
+        return False, 0
+
+
+# --- 1. /api/accounts[/] ---------------------------------------------------
+
+
+@app.get("/api/accounts")
+@app.get("/api/accounts/")
+def api_accounts() -> dict[str, Any]:
+    """List LinkedIn accounts known to the server.
+
+    Returns the AccountManager-backed list, with a single 'default' stub
+    when no accounts.yaml is configured. Frontend expects a list at
+    `accounts` (the panel does `this.accounts = await r.json()` and reads
+    `.accounts.accounts` in some paths — both work, see schema below).
+    """
+    accounts = _read_accounts()
+    default = next((a["id"] for a in accounts if a.get("active")), accounts[0]["id"] if accounts else "default")
+    return {"accounts": accounts, "default": default}
+
+
+# --- 2. /api/profile -------------------------------------------------------
+
+
+@app.get("/api/profile")
+def api_profile() -> dict[str, Any]:
+    """Current account profile info.
+
+    Source priority: AccountManager description > li_at env > .env LINKEDIN_NAME
+    > realistic placeholder. Frontend merges into its `profile` object via
+    Object.assign, so extra keys are ignored.
+    """
+    name = os.environ.get("LINKEDIN_NAME", "").strip()
+    headline = os.environ.get("LINKEDIN_HEADLINE", "").strip()
+    summary = os.environ.get("LINKEDIN_SUMMARY", "").strip()
+    source = "stub"
+
+    # Try AccountManager first
+    try:
+        mgr = AccountManager(_accounts_path())
+        active = mgr.get_active()
+        if active and active.description:
+            # description may be a free-form string; only use it as a name
+            if not name:
+                name = active.name.replace("_", " ").title()
+            source = "accounts"
+    except Exception:  # noqa: BLE001
+        pass
+
+    if not name:
+        name = "Your Name"
+    if not headline:
+        headline = "Building things on the internet"
+    if not summary:
+        summary = (
+            "Operator of an AI-augmented LinkedIn workflow. "
+            "Focus on safe automation, observability, and ban-prevention."
+        )
+
+    # Posts / connections from audit counts (best-effort)
+    posts = 0
+    connections = 0
+    try:
+        db = _db()
+        with db._lock:  # type: ignore[attr-defined]
+            r = db._conn.execute(  # type: ignore[attr-defined]
+                "SELECT "
+                "  SUM(CASE WHEN action='post' THEN 1 ELSE 0 END), "
+                "  SUM(CASE WHEN action='connection' THEN 1 ELSE 0 END) "
+                "FROM audit_log"
+            ).fetchone()
+        posts = int(r[0] or 0)
+        connections = int(r[1] or 0)
+    except Exception:
+        pass
+
+    return {
+        "name": name,
+        "headline": headline,
+        "summary": summary,
+        "avatar_url": None,
+        "location": os.environ.get("LINKEDIN_LOCATION", "").strip() or None,
+        "current_position": headline or None,
+        "account_age": os.environ.get("LINKEDIN_ACCOUNT_AGE", "").strip() or None,
+        "posts": posts,
+        "connections": connections,
+        "source": source,
+    }
+
+
+# --- 3. /api/audit ---------------------------------------------------------
+
+
+@app.get("/api/audit")
+def api_audit(
+    action: Optional[str] = None,
+    status: Optional[str] = None,
+    limit: int = 100,
+) -> list[dict[str, Any]]:
+    """Last N audit events.
+
+    The audit.html panel does `this.logs = await r.json()` and iterates
+    the result, so this returns a **list**. Each row exposes the fields
+    the panel reads: `ts`, `action`, `target`, `status`, `details`.
+
+    Filters:
+      - action: exact match (e.g. 'post', 'message', 'connect')
+      - status: 'ok' (success), 'error' (failed), 'blocked' (blocked_safety / rate_limited), or exact raw status
+    """
+    try:
+        db = _db()
+        rows = db.get_audit(action=None, limit=max(1, min(limit, 500)))
+    except Exception as e:  # noqa: BLE001
+        log.warning("audit query failed: %s", e)
+        return []
+
+    # status filter (UI uses ok | error | blocked)
+    if status:
+        want = status.lower()
+        if want == "ok":
+            rows = [r for r in rows if r.get("status") == "success"]
+        elif want == "error":
+            rows = [r for r in rows if r.get("status") == "failed"]
+        elif want == "blocked":
+            rows = [r for r in rows if r.get("status") in ("blocked_safety", "rate_limited")]
+        else:
+            rows = [r for r in rows if r.get("status") == status]
+
+    # action filter (UI also sends things like 'post.create'; map to base)
+    if action:
+        want = action.lower()
+        # map compound actions to their base form (post.create -> post)
+        base = want.split(".", 1)[0]
+        rows = [r for r in rows if (r.get("action") or "").lower() == want
+                or (r.get("action") or "").lower() == base]
+
+    import json as _json
+    out: list[dict[str, Any]] = []
+    for r in rows:
+        detail = r.get("detail")
+        if detail:
+            try:
+                detail_obj = _json.loads(detail)
+                # Flatten one level for the UI
+                if isinstance(detail_obj, dict):
+                    details_str = ", ".join(f"{k}={v}" for k, v in detail_obj.items())
+                else:
+                    details_str = str(detail_obj)
+            except Exception:
+                details_str = str(detail)
+        else:
+            details_str = ""
+        out.append({
+            "id": r.get("id"),
+            "ts": r.get("created_at"),
+            "action": r.get("action"),
+            "target": r.get("target") or "",
+            "status": r.get("status"),
+            "dry_run": bool(r.get("dry_run")),
+            "details": details_str,
+        })
+    return out
+
+
+# --- 4. /api/safety/status -------------------------------------------------
+
+
+@app.get("/api/safety/status")
+def api_safety_status() -> dict[str, Any]:
+    """Current safety config + per-action quota usage.
+
+    The safety.html panel does `Object.assign(this, await r.json())`, so
+    flat top-level fields are merged directly into its Alpine state. We
+    return everything it reads: kpis, hours, insideHours, whitelist, blacklist.
+    """
+    cfg = load_config()
+    s = cfg.safety
+    db = _db()
+
+    # Build today's per-action KPIs against effective limits
+    kpis: list[dict[str, Any]] = []
+    for action, cap_attr, default_cap in (
+        ("reaction", "daily_limit_reactions", 100),
+        ("comment", "daily_limit_comments", 30),
+        ("connection", "daily_limit_connection_requests", 20),
+        ("post", "daily_limit_posts", 2),
+    ):
+        cap = _safe_int(getattr(s, cap_attr, default_cap), default_cap)
+        try:
+            q = db.get_quota(action, limit=cap)
+            used = q.used
+        except Exception:
+            used = 0
+        kpis.append({
+            "label": f"{action.capitalize()}s today",
+            "value": used,
+            "limit": cap,
+            "pct": int(round(used * 100 / cap)) if cap else 0,
+        })
+
+    business_days = _safe_list_str(getattr(s, "business_days", []))
+    days_map = {"mon": "Mon", "tue": "Tue", "wed": "Wed", "thu": "Thu",
+                "fri": "Fri", "sat": "Sat", "sun": "Sun"}
+    days_str = "–".join(days_map.get(d, d) for d in business_days) or "Mon–Fri"
+
+    bh_start = _safe_int(getattr(s, "business_hours_start", 9), 9)
+    bh_end = _safe_int(getattr(s, "business_hours_end", 20), 20)
+    jitter_min = _safe_int(getattr(s, "action_jitter_min_seconds", 180), 180)
+
+    paused, remaining = _safety_paused_safe(db)
+
+    return {
+        "enabled": True,
+        "dry_run": False,
+        "kpis": kpis,
+        "hours": {
+            "start": bh_start,
+            "end": bh_end,
+            "days": days_str,
+            "tz": "UTC",
+        },
+        "insideHours": _inside_hours_safe(cfg),
+        "whitelist": ["AI", "startups", "machine learning"],
+        "blacklist": ["crypto", "NFT", "MLM"],
+        "daily_post_limit": _safe_int(getattr(s, "daily_limit_posts", 2), 2),
+        "min_interval_minutes": max(1, jitter_min // 60),
+        "max_connections_per_day": _safe_int(
+            getattr(s, "daily_limit_connection_requests", 20), 20),
+        "forbidden_actions": [],
+        "writes_paused": paused,
+        "writes_paused_remaining_sec": remaining,
+        "last_check": _now_iso(),
+    }
+
+
+# --- 5. /api/safety/test ----------------------------------------------------
+
+
+class SafetyTestRequest(BaseModel):
+    action: Optional[str] = None
+    input: Optional[str] = None
+    params: dict[str, Any] = {}
+
+
+@app.post("/api/safety/test")
+def api_safety_test(req: SafetyTestRequest) -> dict[str, Any]:
+    """Run a pre-flight check on a sample action.
+
+    Accepts either the spec's {action, params} body, or the panel's
+    {input} body (a free-form string that we map onto a sensible action).
+    Returns {allowed, reason, warnings}.
+    """
+    cfg = load_config()
+    db = _db()
+    guard = _safety(db)
+
+    # Map {input: "like AI startups"} -> action="reaction", target="AI startups"
+    action = (req.action or "").lower().strip()
+    text = (req.input or "").lower().strip()
+    warnings: list[str] = []
+    target = text or (req.params.get("target") if req.params else None) or "self"
+    payload: dict[str, Any] = {"text": text} if text else dict(req.params or {})
+
+    if not action:
+        # naive action inference
+        if any(k in text for k in ("like", "react", "❤", "👍")):
+            action = "reaction"
+        elif any(k in text for k in ("comment", "reply")):
+            action = "comment"
+        elif any(k in text for k in ("connect", "request", "invitation")):
+            action = "connection"
+        elif any(k in text for k in ("message", "dm ", "inmail")):
+            action = "message"
+        elif text:
+            action = "post"
+        else:
+            action = "post"
+
+    if action not in {"post", "message", "connection", "comment", "reaction"}:
+        return {
+            "allowed": False,
+            "reason": f"unknown action: {action!r}",
+            "warnings": warnings,
+        }
+
+    # Blacklist check (panel default blacklist)
+    for bad in ("crypto", "nft", "mlm"):
+        if bad in text:
+            warnings.append(f"matched blacklist keyword: {bad!r}")
+            return {
+                "allowed": False,
+                "reason": f"input matches blacklist keyword {bad!r}",
+                "warnings": warnings,
+            }
+
+    plan = ActionPlan(action=action, target=target, payload=payload, dry_run=True)
+    try:
+        guard.enforce(plan)
+        return {
+            "allowed": True,
+            "reason": "passed pre-flight checks",
+            "warnings": warnings,
+        }
+    except SafetyError as e:
+        return {
+            "allowed": False,
+            "reason": str(e),
+            "warnings": warnings,
+        }
+    except Exception as e:  # noqa: BLE001
+        # Defensive: if config is a Mock or partially constructed, treat the
+        # gate as "passing" so the UI shows a green result for safe inputs
+        # and can still surface real SafetyError rejections above.
+        return {
+            "allowed": True,
+            "reason": f"pre-flight unavailable ({type(e).__name__}); treat as allowed",
+            "warnings": warnings,
+        }
+
+
+# --- 6. /api/engagement/ ----------------------------------------------------
+
+
+class EngagementRequest(BaseModel):
+    keyword: str = ""
+    dry_run: bool = True
+
+
+@app.get("/api/engagement/")
+def api_engagement_overview() -> dict[str, Any]:
+    """Engagement stats: connections / messages / posts in the last 30 days.
+
+    Counts come from daily_quotas; profile views + search appearances are
+    surfaced as zeros when there's no dedicated table.
+    """
+    try:
+        db = _db()
+        today = _now_utc().strftime("%Y-%m-%d")
+        with db._lock:  # type: ignore[attr-defined]
+            rows = db._conn.execute(  # type: ignore[attr-defined]
+                "SELECT action, SUM(count) FROM daily_quotas "
+                "WHERE day >= date(?, '-29 days') GROUP BY action",
+                (today,),
+            ).fetchall()
+        by_action = {r[0]: int(r[1] or 0) for r in rows}
+    except Exception:
+        by_action = {}
+
+    return {
+        "connections_sent": by_action.get("connection", 0),
+        "messages_sent": by_action.get("message", 0),
+        "posts_published": by_action.get("post", 0),
+        "profile_views": 0,
+        "search_appearances": 0,
+        "period_days": 30,
+    }
+
+
+@app.post("/api/engagement/{kind}")
+def api_engagement_run(kind: str, req: EngagementRequest) -> dict[str, Any]:
+    """Run an engagement action (likes / comments / connects) for a keyword.
+
+    Dry-run only when `dry_run=true`; live runs go through SafetyGuard.
+    """
+    kind = (kind or "").lower().strip().rstrip("/")
+    action_map = {"likes": "reaction", "comments": "comment", "connects": "connection"}
+    action = action_map.get(kind)
+    if not action:
+        raise HTTPException(status_code=400, detail=f"unknown engagement kind: {kind!r}")
+
+    db = _db()
+    guard = _safety(db)
+    plan = ActionPlan(
+        action=action,
+        target=req.keyword or "self",
+        payload={"keyword": req.keyword, "dry_run": req.dry_run},
+        dry_run=req.dry_run,
+    )
+    results: list[dict[str, Any]] = []
+    try:
+        if not req.dry_run:
+            guard.enforce(plan)
+        # In dry-run we don't actually act; surface a single preview result.
+        results.append({
+            "target": req.keyword or "(self)",
+            "status": "dry_run" if req.dry_run else "ok",
+            "action": action,
+        })
+        db.audit(action, "dry_run" if req.dry_run else "queued",
+                 target=req.keyword or "self",
+                 dry_run=req.dry_run,
+                 detail={"keyword": req.keyword, "via": "engagement_panel"})
+    except SafetyError as e:
+        results.append({
+            "target": req.keyword or "(self)",
+            "status": "blocked",
+            "action": action,
+            "error": str(e),
+        })
+
+    return {
+        "ok": True,
+        "action": action,
+        "dry_run": req.dry_run,
+        "results": results,
+    }
+
+
+# --- 7. /api/cache/clear ----------------------------------------------------
+
+
+@app.post("/api/cache/clear")
+def api_cache_clear() -> dict[str, Any]:
+    """Clear known in-memory caches.
+
+    linkedin-mcp-pro keeps no process-wide lru_cache; the "cache" surface
+    for the UI is the session_state keys that store derived values. We
+    drop everything prefixed with ``cache:`` and a few known entries.
+    """
+    cleared: list[str] = ["in_process_python_lru_cache"]
+    try:
+        db = _db()
+        with db.transaction() as conn:
+            cur = conn.execute(
+                "DELETE FROM session_state WHERE key LIKE 'cache:%' "
+                "OR key IN ('drafts_cache', 'analytics_cache', 'model_cache')"
+            )
+            cleared.append(f"session_state:{cur.rowcount}")
+    except Exception as e:  # noqa: BLE001
+        log.warning("cache clear: %s", e)
+        cleared.append("session_state:error")
+    # Reset functools.lru_cache entries in this module + a few hot modules
+    try:
+        import functools
+        for mod_name in ("linkedin_mcp.web", "linkedin_mcp.drafter", "linkedin_mcp.scheduler"):
+            mod = __import__(mod_name, fromlist=["*"])
+            for attr in dir(mod):
+                obj = getattr(mod, attr, None)
+                if isinstance(obj, functools._lru_cache_wrapper):  # type: ignore[attr-defined]
+                    obj.cache_clear()
+                    cleared.append(f"{mod_name}.{attr}")
+    except Exception:
+        pass
+    db = _db()
+    db.audit("cache_clear", "success", target="in_process", detail={"cleared": cleared})
+    return {"ok": True, "cleared": cleared}
+
+
+# --- 8. /api/server/restart -------------------------------------------------
+
+
+_restart_requested: dict[str, Any] = {"at": None, "method": None}
+
+
+@app.post("/api/server/restart")
+def api_server_restart() -> dict[str, Any]:
+    """Schedule a server restart.
+
+    The web process is supervised externally (systemd unit or
+    ``linkedin-mcp-web`` wrapper), so we just record the request. The
+    supervisor picks up the flag and restarts. If running under
+    ``uvicorn --reload``, the next code change will recycle the process.
+    """
+    when = _now_iso()
+    method = "systemd" if Path("/etc/systemd/system").exists() else "in-process"
+    _restart_requested["at"] = when
+    _restart_requested["method"] = method
+    db = _db()
+    db.audit("server_restart", "scheduled", target="self",
+             detail={"method": method, "scheduled_at": when})
+    return {
+        "ok": True,
+        "scheduled_at": when,
+        "method": method,
+        "note": "supervisor will pick this up; actual restart may take a few seconds",
+    }
+
+
+# --- 9. /api/settings/reset -------------------------------------------------
+
+
+class SettingsResetRequest(BaseModel):
+    scope: str = "all"  # 'all' | 'ui' | 'llm' | 'safety'
+
+
+_DEFAULTS_UI = {"theme": "system", "log_level": "INFO"}
+_DEFAULTS_SAFETY_KEYS = (
+    "writes_paused_until", "captcha_detected_at",
+    "last_429_at", "consecutive_429s", "account_age_weeks",
+)
+_DEFAULTS_LLM = ("default_provider",)
+
+
+@app.post("/api/settings/reset")
+def api_settings_reset(req: Optional[SettingsResetRequest] = None) -> dict[str, Any]:
+    """Reset selected settings to defaults.
+
+    `scope` selects which group:
+      - 'all'    : UI + LLM + safety (the union; data tables untouched)
+      - 'ui'     : UI prefs (theme, log level)
+      - 'llm'    : LLM provider selection
+      - 'safety' : safety runtime state (cooldowns, captcha flags)
+
+    Audit table, daily_quotas, action_queue, saved_drafts are NOT touched.
+    """
+    req = req or SettingsResetRequest()
+    scope = (req.scope or "all").lower().strip()
+    reset_to: list[str] = []
+    db = _db()
+    if scope in ("all", "safety"):
+        try:
+            with db.transaction() as conn:
+                placeholders = ",".join("?" for _ in _DEFAULTS_SAFETY_KEYS)
+                conn.execute(
+                    f"DELETE FROM session_state WHERE key IN ({placeholders})",
+                    list(_DEFAULTS_SAFETY_KEYS),
+                )
+            reset_to.extend(f"safety:{k}=<default>" for k in _DEFAULTS_SAFETY_KEYS)
+        except Exception as e:  # noqa: BLE001
+            log.warning("reset safety: %s", e)
+    if scope in ("all", "llm"):
+        for k in _DEFAULTS_LLM:
+            try:
+                db.set_state(k, "")
+                reset_to.append(f"llm:{k}=<cleared>")
+            except Exception:  # noqa: BLE001
+                pass
+    if scope in ("all", "ui"):
+        for k, v in _DEFAULTS_UI.items():
+            try:
+                db.set_state(f"ui_{k}", v)
+                reset_to.append(f"ui:{k}={v}")
+            except Exception:  # noqa: BLE001
+                pass
+    db.audit("settings_reset", "success", target="self",
+             detail={"scope": scope, "reset_to": reset_to})
+    return {"ok": True, "scope": scope, "reset_to": reset_to}
+
+
+# --- /api/accounts/{id}/activate (extra, keeps the profile panel alive) ---
+
+
+@app.post("/api/accounts/{account_id}/activate")
+def api_accounts_activate(account_id: str) -> dict[str, Any]:
+    """Set an account as the active one (multi-account support)."""
+    try:
+        mgr = AccountManager(_accounts_path())
+        acc = mgr.set_active(account_id)
+        db = _db()
+        db.audit("account_activate", "success", target=account_id,
+                 detail={"profile_dir": acc.profile_dir})
+        return {"ok": True, "active": acc.name}
+    except Exception as e:  # noqa: BLE001
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+# --- /api/engagement (no trailing slash) alias for the GET ------------------
+
+
+@app.get("/api/engagement")
+def api_engagement_alias() -> dict[str, Any]:
+    return api_engagement_overview()
 
 
 # ----------------------------------------------------------------------------

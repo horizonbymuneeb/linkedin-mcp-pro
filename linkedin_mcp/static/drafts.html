@@ -3,17 +3,39 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Draft a Post · linkedin-mcp-pro</title>
+  <title>Compose · linkedin-mcp-pro</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     tailwind.config = {
       darkMode: 'class',
       theme: {
         extend: {
-          colors: { 'li-blue': '#0a66c2', 'li-blue-dark': '#004182' },
-          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
-          animation: { 'fade-in': 'fadeIn 0.3s ease-in-out' },
-          keyframes: { fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } } },
+          colors: {
+            'li-blue': '#0a66c2',
+            'li-blue-dark': '#004182',
+            'li-bg': '#f4f2ee',
+            'li-card': '#ffffff',
+            'li-border': '#e0dfdc',
+            'li-text': '#000000e6',
+            'li-text-2': '#00000099',
+            'li-accent': '#057642',
+          },
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
+            li: ['Inter', 'system-ui', 'sans-serif'],
+          },
+          animation: {
+            'fade-in': 'fadeIn 0.25s ease-out',
+            'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
+          },
+          keyframes: {
+            fadeIn: { '0%': { opacity: 0, transform: 'translateY(4px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            pulseSoft: { '0%, 100%': { opacity: 1 }, '50%': { opacity: 0.6 } },
+          },
+          boxShadow: {
+            'li-card': '0 0 0 1px rgba(0,0,0,0.08), 0 4px 6px rgba(0,0,0,0.04)',
+            'li-pop': '0 8px 24px rgba(0,0,0,0.12)',
+          },
         },
       },
     }
@@ -21,7 +43,39 @@
   <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
-  <style>[x-cloak] { display: none !important; } body { font-family: 'Inter', system-ui, sans-serif; }</style>
+  <style>
+    [x-cloak] { display: none !important; }
+    body { font-family: 'Inter', system-ui, sans-serif; }
+    /* LinkedIn-style editor */
+    .li-editor[contenteditable=true]:empty:before {
+      content: attr(data-placeholder);
+      color: #00000066;
+      pointer-events: none;
+    }
+    .li-editor:focus { outline: none; }
+    .li-editor b, .li-editor strong { font-weight: 700; }
+    .li-editor i, .li-editor em { font-style: italic; }
+    .li-editor u { text-decoration: underline; }
+    /* Hashtag highlight */
+    .li-editor .tag { color: #0a66c2; font-weight: 500; }
+    .li-editor .mention { color: #0a66c2; font-weight: 600; background: #0a66c212; padding: 0 3px; border-radius: 3px; }
+    .li-editor .link { color: #0a66c2; text-decoration: underline; }
+    /* Scrollbar */
+    .li-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+    .li-scroll::-webkit-scrollbar-track { background: transparent; }
+    .li-scroll::-webkit-scrollbar-thumb { background: #d0d0d0; border-radius: 4px; }
+    .dark .li-scroll::-webkit-scrollbar-thumb { background: #444; }
+    /* LinkedIn-like feed card */
+    .li-feed-card { border-radius: 8px; }
+    .li-feed-card:hover { box-shadow: 0 0 0 1px rgba(0,0,0,0.15), 0 6px 12px rgba(0,0,0,0.08); }
+    /* Toolbar button */
+    .tool-btn { transition: all 0.15s; }
+    .tool-btn:hover { background: #0000000d; }
+    .dark .tool-btn:hover { background: #ffffff14; }
+    .tool-btn.active { color: #0a66c2; background: #0a66c214; }
+    /* Char counter ring */
+    .ring-counter { transition: stroke-dashoffset 0.3s ease, stroke 0.3s ease; }
+  </style>
   <script>
     (function() {
       const saved = localStorage.getItem('theme');
@@ -30,138 +84,723 @@
     })();
   </script>
 </head>
-<body x-data="draftsPanel()" x-init="init()" class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+<body x-data="draftsPanel()" x-init="init()" class="bg-li-bg dark:bg-gray-950 text-li-text dark:text-gray-100 min-h-screen">
 
-<nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+<!-- ==================== NAV ==================== -->
+<nav class="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-li-border dark:border-gray-800">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
+    <div class="flex items-center justify-between h-14">
       <a href="/" class="flex items-center gap-2">
-        <div class="w-8 h-8 bg-gradient-to-br from-li-blue to-li-blue-dark rounded-lg flex items-center justify-center">
+        <div class="w-8 h-8 bg-li-blue rounded-md flex items-center justify-center">
           <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
         </div>
-        <span class="text-lg font-bold bg-gradient-to-r from-li-blue to-li-blue-dark bg-clip-text text-transparent">linkedin-mcp-pro</span>
+        <span class="text-base font-semibold text-li-blue">linkedin-mcp-pro</span>
       </a>
-      <button @click="dark = !dark" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
-        <svg x-show="!dark" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
-        <svg x-show="dark" x-cloak class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
-      </button>
+      <div class="flex items-center gap-2">
+        <span class="hidden sm:inline text-sm text-gray-500 dark:text-gray-400" x-text="profile.name || 'Drafts'"></span>
+        <button @click="dark = !dark" class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition" :title="dark ? 'Light mode' : 'Dark mode'">
+          <svg x-show="!dark" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+          <svg x-show="dark" x-cloak class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+        </button>
+      </div>
     </div>
   </div>
 </nav>
 
-<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
-  <div class="rounded-2xl bg-gradient-to-br from-li-blue to-li-blue-dark text-white p-8 shadow-xl mb-8">
-    <h1 class="text-3xl font-bold mb-2">Draft a Post</h1>
-    <p class="text-blue-100">Generate, edit, and publish — all in one place</p>
-  </div>
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 animate-fade-in">
 
-  <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-      <h3 class="text-lg font-semibold mb-4">Generate</h3>
-      <form @submit.prevent="draft()" class="space-y-4">
-        <div>
-          <label class="block text-sm font-medium mb-1">Topic</label>
-          <input type="text" x-model="form.topic" placeholder="e.g. building a startup in 2026" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-li-blue focus:border-transparent" required>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Tone</label>
-          <select x-model="form.tone" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-li-blue focus:border-transparent">
-            <option>professional</option><option>casual</option><option>witty</option><option>inspiring</option><option>technical</option>
-          </select>
-        </div>
-        <div>
-          <label class="block text-sm font-medium mb-1">Length: <span class="font-mono text-li-blue" x-text="form.length + ' words'"></span></label>
-          <input type="range" x-model.number="form.length" min="50" max="500" step="25" class="w-full">
-        </div>
-        <label class="flex items-center gap-2 text-sm">
-          <input type="checkbox" x-model="form.hashtags" class="rounded">
-          <span>Include hashtags</span>
-        </label>
-        <button type="submit" :disabled="loading" class="w-full px-4 py-2.5 bg-li-blue hover:bg-li-blue-dark disabled:opacity-50 text-white rounded-lg font-medium transition flex items-center justify-center gap-2">
-          <svg x-show="loading" class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-          <span x-text="loading ? 'Drafting…' : 'Draft'"></span>
-        </button>
-      </form>
+  <!-- ==================== HEADER ==================== -->
+  <div class="mb-6 flex items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Compose a post</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mt-0.5">Generate with AI, edit, and publish — LinkedIn-style.</p>
     </div>
-
-    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-      <div class="flex items-center justify-between mb-4">
-        <h3 class="text-lg font-semibold">Preview</h3>
-        <span class="text-sm font-mono" :class="output.length > 3000 ? 'text-red-600' : 'text-gray-500'" x-text="output.length + ' / 3000'"></span>
-      </div>
-      <textarea x-model="output" rows="12" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-li-blue focus:border-transparent font-sans" placeholder="Your draft will appear here…"></textarea>
-      <div class="flex gap-2 mt-4">
-        <button @click="save()" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition">Save draft</button>
-        <button @click="post()" class="flex-1 px-4 py-2 bg-li-blue hover:bg-li-blue-dark text-white rounded-lg font-medium transition">Post now</button>
-      </div>
+    <div class="hidden md:flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
+      <span class="px-2 py-1 rounded-full bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 font-medium">● Drafts saved locally</span>
     </div>
   </div>
 
-  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
-    <button @click="recentOpen = !recentOpen" class="w-full flex items-center justify-between">
-      <h3 class="text-lg font-semibold">Recent drafts</h3>
-      <svg :class="recentOpen ? 'rotate-180' : ''" class="w-5 h-5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
-    </button>
-    <div x-show="recentOpen" x-cloak class="mt-4 space-y-2">
-      <template x-for="d in recent" :key="d.id">
-        <div class="p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800 transition cursor-pointer" @click="output = d.body">
-          <div class="flex items-center justify-between mb-1">
-            <span class="text-sm font-medium" x-text="d.topic || 'Untitled'"></span>
-            <span class="text-xs text-gray-500" x-text="d.ts"></span>
+  <!-- ==================== TABS ==================== -->
+  <div class="mb-4 border-b border-li-border dark:border-gray-800">
+    <nav class="flex gap-6 -mb-px">
+      <button @click="activeTab = 'compose'" :class="activeTab === 'compose' ? 'border-li-blue text-li-blue' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="py-3 px-1 border-b-2 text-sm font-medium transition">
+        Compose
+      </button>
+      <button @click="activeTab = 'templates'; loadTemplates()" :class="activeTab === 'templates' ? 'border-li-blue text-li-blue' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="py-3 px-1 border-b-2 text-sm font-medium transition">
+        Templates
+      </button>
+      <button @click="activeTab = 'recent'; loadRecent()" :class="activeTab === 'recent' ? 'border-li-blue text-li-blue' : 'border-transparent text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'" class="py-3 px-1 border-b-2 text-sm font-medium transition">
+        Recent
+        <span x-show="recent.length" class="ml-1 px-1.5 py-0.5 text-[10px] rounded-full bg-li-blue text-white" x-text="recent.length"></span>
+      </button>
+    </nav>
+  </div>
+
+  <!-- ==================== COMPOSE TAB ==================== -->
+  <div x-show="activeTab === 'compose'" x-cloak class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
+    <!-- LEFT: AI generator + editor -->
+    <div class="lg:col-span-3 space-y-4">
+
+      <!-- AI panel -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-li-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-sm font-semibold flex items-center gap-2">
+            <svg class="w-4 h-4 text-li-blue" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3zM15.657 5.757a1 1 0 00-1.414-1.414l-.707.707a1 1 0 001.414 1.414l.707-.707zM18 10a1 1 0 01-1 1h-1a1 1 0 110-2h1a1 1 0 011 1zM5.05 6.464A1 1 0 106.464 5.05l-.707-.707a1 1 0 00-1.414 1.414l.707.707zM5 10a1 1 0 01-1 1H3a1 1 0 110-2h1a1 1 0 011 1zM8 16a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1zM13 16a1 1 0 011-1h.01a1 1 0 110 2H14a1 1 0 01-1-1zM13 9a1 1 0 011-1h.01a1 1 0 110 2H14a1 1 0 01-1-1z"/></svg>
+            AI Draft
+          </h2>
+          <button @click="aiOpen = !aiOpen" class="text-xs text-gray-500 hover:text-li-blue" x-text="aiOpen ? 'Hide' : 'Show'"></button>
+        </div>
+        <div x-show="aiOpen" x-cloak>
+          <form @submit.prevent="draft()" class="space-y-3">
+            <div>
+              <input type="text" x-model="form.topic" placeholder="What's your post about? e.g. 'lessons from scaling a 10-person team'" class="w-full px-3 py-2.5 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 text-sm focus:ring-2 focus:ring-li-blue focus:border-transparent" required>
+            </div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 block mb-1">Tone</label>
+                <select x-model="form.tone" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-sm">
+                  <option>professional</option>
+                  <option>casual</option>
+                  <option>witty</option>
+                  <option>inspiring</option>
+                  <option>technical</option>
+                </select>
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 block mb-1">Length: <span class="font-mono text-li-blue" x-text="form.length + 'w'"></span></label>
+                <input type="range" x-model.number="form.length" min="50" max="500" step="25" class="w-full">
+              </div>
+              <div>
+                <label class="text-xs text-gray-500 dark:text-gray-400 block mb-1">Style</label>
+                <select x-model="form.style" class="w-full px-2 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800 text-sm">
+                  <option value="story">Story</option>
+                  <option value="listicle">Listicle</option>
+                  <option value="hot-take">Hot take</option>
+                  <option value="howto">How-to</option>
+                  <option value="question">Question</option>
+                </select>
+              </div>
+            </div>
+            <div class="flex items-center justify-between text-xs">
+              <label class="flex items-center gap-1.5 text-gray-600 dark:text-gray-400">
+                <input type="checkbox" x-model="form.hashtags" class="rounded text-li-blue focus:ring-li-blue">
+                <span>Add hashtags</span>
+              </label>
+              <button type="submit" :disabled="loading" class="px-4 py-1.5 bg-li-blue hover:bg-li-blue-dark disabled:opacity-50 text-white rounded-md text-sm font-medium transition flex items-center gap-2">
+                <svg x-show="loading" class="animate-spin w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                <span x-text="loading ? 'Drafting…' : 'Generate'"></span>
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      <!-- Editor card -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-li-card overflow-hidden">
+        <!-- Composer header (mimic LinkedIn) -->
+        <div class="p-4 flex items-start gap-3 border-b border-li-border dark:border-gray-800">
+          <div class="w-12 h-12 rounded-full bg-gradient-to-br from-li-blue to-li-blue-dark flex items-center justify-center text-white font-semibold flex-shrink-0" x-text="(profile.name || 'You').split(' ').map(s => s[0]).join('').slice(0,2)"></div>
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-semibold" x-text="profile.name || 'You'"></div>
+            <div class="text-xs text-gray-500 dark:text-gray-400 truncate" x-text="profile.headline || 'Post to anyone'"></div>
+            <button class="mt-1 inline-flex items-center gap-1 px-2 py-0.5 text-xs border border-gray-300 dark:border-gray-700 rounded-full hover:bg-gray-50 dark:hover:bg-gray-800">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+              <span>Post to: Anyone</span>
+            </button>
           </div>
-          <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2" x-text="d.body"></p>
+        </div>
+
+        <!-- Rich text editor -->
+        <div class="p-4">
+          <div
+            x-ref="editor"
+            contenteditable="true"
+            class="li-editor min-h-[280px] max-h-[500px] overflow-y-auto li-scroll text-[15px] leading-relaxed text-gray-900 dark:text-gray-100"
+            data-placeholder="What do you want to talk about?"
+            @input="onEditorInput($event)"
+            @paste="onPaste($event)">
+          </div>
+        </div>
+
+        <!-- Toolbar -->
+        <div class="px-4 py-2 border-t border-li-border dark:border-gray-800 flex items-center gap-1 flex-wrap">
+          <button @click="exec('bold')" class="tool-btn p-2 rounded" title="Bold (Ctrl+B)"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M5 3h6a3.5 3.5 0 012.6 5.85A4 4 0 0111 17H5V3zm2 2v4h3.5a1.5 1.5 0 100-3H7zm0 6v4h4a2 2 0 100-4H7z"/></svg></button>
+          <button @click="exec('italic')" class="tool-btn p-2 rounded" title="Italic (Ctrl+I)"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M8 3h7v2h-2.34l-3.32 10H12v2H5v-2h2.34l3.32-10H8V3z"/></svg></button>
+          <button @click="exec('underline')" class="tool-btn p-2 rounded" title="Underline (Ctrl+U)"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M6 3v8a4 4 0 008 0V3h-2v8a2 2 0 11-4 0V3H6zM3 17h14v2H3v-2z"/></svg></button>
+          <span class="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1"></span>
+          <button @click="insertList('ul')" class="tool-btn p-2 rounded" title="Bullet list"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M3 4h2v2H3V4zm4 1h10v2H7V5zm-4 5h2v2H3V9zm4 1h10v2H7v-2zm-4 5h2v2H3v-2zm4 1h10v2H7v-2z"/></svg></button>
+          <button @click="insertList('ol')" class="tool-btn p-2 rounded" title="Numbered list"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M3 4h2v2H3V4zm0 5h2v2H3V9zm0 5h2v2H3v-2zm4-9h10v2H7V5zm0 5h10v2H7V9zm0 5h10v2H7v-2zM5 4h.5L5 5.5h.5V4H5zm-.5 5l.5-.5h1v2H5v-.5h.5v-.5H5v-.5zm.5 4H5v.5h1v.5H5v.5h1.5v-1.5H5z" clip-rule="evenodd"/></svg></button>
+          <span class="w-px h-5 bg-gray-300 dark:bg-gray-700 mx-1"></span>
+          <button @click="insertEmoji()" class="tool-btn p-2 rounded" title="Insert emoji">😀</button>
+          <button @click="insertLink()" class="tool-btn p-2 rounded" title="Insert link"><svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a4 4 0 015 5l-1.5 1.5a1 1 0 11-1.4-1.4L14.5 6.5a2 2 0 10-2.8-2.8L10 5.3a1 1 0 11-1.4-1.4L10 3a4 4 0 011-0zM8.5 13.5L7 15a2 2 0 11-2.8-2.8L5.5 11a1 1 0 011.4 1.4L5.5 13.5a.5.5 0 10.7.7L7.5 13a1 1 0 011-1zM5 9a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1z"/></svg></button>
+          <button @click="insertHashtag()" class="tool-btn p-2 rounded text-li-blue font-bold" title="Insert hashtag">#</button>
+          <button @click="insertMention()" class="tool-btn p-2 rounded text-li-blue font-bold" title="Mention">@</button>
+          <div class="flex-1"></div>
+          <span class="text-xs text-gray-500 dark:text-gray-400" x-text="wordCount + ' words'"></span>
+        </div>
+
+        <!-- Action footer (LinkedIn style) -->
+        <div class="px-4 py-3 border-t border-li-border dark:border-gray-800 flex items-center justify-between flex-wrap gap-2">
+          <div class="flex items-center gap-2">
+            <button @click="aiOpen = true; $nextTick(() => $refs.editor.focus())" class="tool-btn px-3 py-1.5 rounded-md text-xs flex items-center gap-1.5">
+              <svg class="w-4 h-4 text-li-blue" fill="currentColor" viewBox="0 0 20 20"><path d="M11 3a1 1 0 10-2 0v1a1 1 0 102 0V3z"/></svg>
+              <span>AI assist</span>
+            </button>
+            <button @click="scheduleOpen = !scheduleOpen" class="tool-btn px-3 py-1.5 rounded-md text-xs flex items-center gap-1.5">
+              <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clip-rule="evenodd"/></svg>
+              <span>Schedule</span>
+            </button>
+          </div>
+          <div class="flex items-center gap-2">
+            <button @click="save()" class="px-4 py-1.5 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-md font-medium transition">Save draft</button>
+            <button @click="post()" :disabled="!plainText().trim()" class="px-5 py-1.5 bg-li-blue hover:bg-li-blue-dark disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-full text-sm font-semibold transition">Post</button>
+          </div>
+        </div>
+
+        <!-- Schedule panel -->
+        <div x-show="scheduleOpen" x-cloak class="px-4 py-3 bg-gray-50 dark:bg-gray-800/50 border-t border-li-border dark:border-gray-800">
+          <div class="flex items-center gap-2 flex-wrap">
+            <label class="text-xs font-medium text-gray-700 dark:text-gray-300">Send at:</label>
+            <input type="datetime-local" x-model="scheduleTime" class="text-sm px-2 py-1 border border-gray-300 dark:border-gray-700 rounded bg-white dark:bg-gray-800">
+            <button @click="schedulePost()" class="px-3 py-1 bg-li-blue text-white text-xs rounded-md hover:bg-li-blue-dark">Schedule</button>
+            <button @click="scheduleOpen = false" class="text-xs text-gray-500 hover:text-gray-700">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick info card -->
+      <div class="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-2 px-1">
+        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/></svg>
+        <span>Drafts auto-save to your browser. Click <b>Save draft</b> to persist server-side.</span>
+      </div>
+    </div>
+
+    <!-- RIGHT: Preview + counter + recent -->
+    <div class="lg:col-span-2 space-y-4">
+
+      <!-- Character counter card -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-li-card p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold">Post length</h3>
+          <span class="text-xs text-gray-500">LinkedIn limit: 3000</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <!-- Ring counter -->
+          <div class="relative w-20 h-20 flex-shrink-0">
+            <svg class="w-20 h-20 -rotate-90" viewBox="0 0 80 80">
+              <circle cx="40" cy="40" r="32" fill="none" stroke="currentColor" stroke-width="6" class="text-gray-200 dark:text-gray-800" />
+              <circle cx="40" cy="40" r="32" fill="none" stroke="currentColor" stroke-width="6" class="ring-counter"
+                :stroke="charCount > 3000 ? '#dc2626' : charCount > 2400 ? '#f59e0b' : '#0a66c2'"
+                :stroke-dasharray="2 * Math.PI * 32"
+                :stroke-dashoffset="2 * Math.PI * 32 * Math.min(1, charCount / 3000)"
+                stroke-linecap="round" />
+            </svg>
+            <div class="absolute inset-0 flex flex-col items-center justify-center">
+              <span class="text-lg font-bold" :class="charCount > 3000 ? 'text-red-600' : charCount > 2400 ? 'text-amber-600' : 'text-gray-900 dark:text-white'" x-text="charCount"></span>
+              <span class="text-[10px] text-gray-500 uppercase tracking-wide">chars</span>
+            </div>
+          </div>
+          <div class="flex-1 space-y-1 text-xs">
+            <div class="flex justify-between"><span class="text-gray-500">Words</span><span class="font-mono font-semibold" x-text="wordCount"></span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Lines</span><span class="font-mono font-semibold" x-text="lineCount"></span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Hashtags</span><span class="font-mono font-semibold" x-text="hashtagCount"></span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Mentions</span><span class="font-mono font-semibold" x-text="mentionCount"></span></div>
+            <div class="flex justify-between"><span class="text-gray-500">Read time</span><span class="font-mono font-semibold" x-text="readTime + 's'"></span></div>
+          </div>
+        </div>
+        <div x-show="charCount > 3000" x-cloak class="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-red-700 dark:text-red-300 flex items-center gap-1.5">
+          <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd"/></svg>
+          Over the 3000 character limit — post will be truncated.
+        </div>
+      </div>
+
+      <!-- LinkedIn-style preview card -->
+      <div>
+        <div class="flex items-center justify-between mb-2 px-1">
+          <h3 class="text-sm font-semibold">Live preview</h3>
+          <span class="text-xs text-gray-500">LinkedIn feed</span>
+        </div>
+        <div class="li-feed-card bg-li-card dark:bg-gray-900 shadow-li-card border border-li-border dark:border-gray-800 overflow-hidden">
+          <!-- Profile header -->
+          <div class="p-3 flex items-start gap-2.5">
+            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-li-blue to-li-blue-dark flex items-center justify-center text-white font-semibold flex-shrink-0" x-text="(profile.name || 'You').split(' ').map(s => s[0]).join('').slice(0,2)"></div>
+            <div class="flex-1 min-w-0">
+              <div class="text-sm font-semibold text-gray-900 dark:text-white" x-text="profile.name || 'Your Name'"></div>
+              <div class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1" x-text="profile.headline || 'Your headline'"></div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
+                <span>now</span>
+                <span>•</span>
+                <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20"><path d="M10 18a8 8 0 100-16 8 8 0 000 16zM7 9a1 1 0 011-1h.01a1 1 0 010 2H8a1 1 0 01-1-1zm5-1a1 1 0 100 2h.01a1 1 0 100-2H12zm-3 4a1 1 0 100 2h.01a1 1 0 100-2H9z"/></svg>
+              </div>
+            </div>
+            <button class="text-gray-400 hover:text-gray-600">
+              <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z"/></svg>
+            </button>
+          </div>
+          <!-- Content -->
+          <div class="px-4 pb-3 text-sm text-gray-900 dark:text-gray-100 leading-relaxed whitespace-pre-wrap break-words min-h-[60px]" x-html="previewHtml || '<span class=&quot;text-gray-400&quot;>Your post will appear here…</span>'"></div>
+          <!-- Engagement bar -->
+          <div class="px-4 py-2 border-t border-li-border dark:border-gray-800 flex items-center justify-between text-xs text-gray-500">
+            <div class="flex items-center gap-1">
+              <span class="flex items-center -space-x-1">
+                <span class="w-4 h-4 rounded-full bg-li-blue text-white text-[8px] flex items-center justify-center">👍</span>
+                <span class="w-4 h-4 rounded-full bg-red-500 text-white text-[8px] flex items-center justify-center">❤</span>
+                <span class="w-4 h-4 rounded-full bg-yellow-500 text-white text-[8px] flex items-center justify-center">💡</span>
+              </span>
+              <span class="ml-1.5">0 reactions</span>
+            </div>
+            <div class="flex gap-3">
+              <span>0 comments</span>
+              <span>0 reposts</span>
+            </div>
+          </div>
+          <div class="px-2 py-1 border-t border-li-border dark:border-gray-800 grid grid-cols-4 gap-1 text-xs text-gray-600 dark:text-gray-400">
+            <button class="tool-btn py-2 rounded font-medium flex items-center justify-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5"/></svg>Like</button>
+            <button class="tool-btn py-2 rounded font-medium flex items-center justify-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>Comment</button>
+            <button class="tool-btn py-2 rounded font-medium flex items-center justify-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Repost</button>
+            <button class="tool-btn py-2 rounded font-medium flex items-center justify-center gap-1.5"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent mini list (right rail) -->
+      <div class="bg-white dark:bg-gray-900 rounded-xl shadow-li-card p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold">Latest drafts</h3>
+          <button @click="activeTab = 'recent'; loadRecent()" class="text-xs text-li-blue hover:underline">See all</button>
+        </div>
+        <div class="space-y-2 max-h-[280px] overflow-y-auto li-scroll">
+          <template x-for="d in recent.slice(0, 3)" :key="d.id">
+            <div @click="loadDraft(d)" class="p-2.5 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer border border-transparent hover:border-li-border dark:hover:border-gray-700 transition">
+              <div class="text-xs font-medium text-gray-900 dark:text-gray-100 line-clamp-1" x-text="d.topic || 'Untitled'"></div>
+              <div class="text-[11px] text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5" x-text="d.body"></div>
+              <div class="text-[10px] text-gray-400 mt-0.5" x-text="formatDate(d.ts)"></div>
+            </div>
+          </template>
+          <div x-show="recent.length === 0 && !recentLoading" class="text-xs text-gray-500 py-2 text-center">No drafts yet</div>
+          <div x-show="recentLoading" class="text-xs text-gray-500 py-2 text-center animate-pulse-soft">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TEMPLATES TAB ==================== -->
+  <div x-show="activeTab === 'templates'" x-cloak>
+    <div class="mb-4 flex items-center justify-between">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Pick a template, customize, and post.</p>
+      <button @click="loadTemplates()" class="text-xs text-li-blue hover:underline">↻ Refresh</button>
+    </div>
+    <div x-show="templateLoading" class="text-center py-12 text-gray-500">Loading templates…</div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <template x-for="t in templates" :key="t.id || t.name">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-li-card p-4 hover:shadow-li-pop transition cursor-pointer flex flex-col" @click="useTemplate(t)">
+          <div class="flex items-start justify-between mb-2">
+            <h4 class="font-semibold text-sm" x-text="t.name || t.title"></h4>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 uppercase tracking-wide" x-text="t.tone || 'general'"></span>
+          </div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-3 flex-1" x-text="(t.body || t.text || t.template || '').slice(0, 200)"></p>
+          <div class="mt-3 flex items-center justify-between">
+            <span class="text-[10px] text-gray-500" x-text="(t.body || t.text || '').length + ' chars'"></span>
+            <button class="text-xs text-li-blue font-medium hover:underline">Use template →</button>
+          </div>
         </div>
       </template>
-      <div x-show="recent.length === 0" class="text-sm text-gray-500 dark:text-gray-400 py-2">No saved drafts yet</div>
+      <div x-show="!templateLoading && templates.length === 0" class="col-span-full text-center py-12 text-gray-500">
+        No templates available.
+      </div>
     </div>
   </div>
+
+  <!-- ==================== RECENT TAB ==================== -->
+  <div x-show="activeTab === 'recent'" x-cloak>
+    <div class="mb-4 flex items-center justify-between">
+      <p class="text-sm text-gray-500 dark:text-gray-400">Your saved drafts.</p>
+      <div class="flex gap-2">
+        <input type="text" x-model="searchQuery" @input="filterRecent()" placeholder="Search drafts…" class="text-sm px-3 py-1.5 border border-gray-300 dark:border-gray-700 rounded-md bg-white dark:bg-gray-800">
+        <button @click="loadRecent()" class="text-xs text-li-blue hover:underline px-2">↻</button>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <template x-for="d in filteredRecent" :key="d.id">
+        <div class="bg-white dark:bg-gray-900 rounded-xl shadow-li-card p-4 hover:shadow-li-pop transition flex flex-col">
+          <div class="flex items-start justify-between mb-2">
+            <h4 class="font-semibold text-sm line-clamp-1" x-text="d.topic || 'Untitled'"></h4>
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 uppercase" x-text="d.tone || 'general'"></span>
+          </div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 line-clamp-4 flex-1" x-text="d.body"></p>
+          <div class="mt-3 flex items-center justify-between text-[11px] text-gray-500">
+            <span x-text="formatDate(d.ts)"></span>
+            <span x-text="(d.body || '').length + ' chars'"></span>
+          </div>
+          <div class="mt-3 flex gap-1.5">
+            <button @click="loadDraft(d); activeTab = 'compose'" class="flex-1 px-3 py-1.5 bg-li-blue hover:bg-li-blue-dark text-white rounded-md text-xs font-medium">Open</button>
+            <button @click="deleteDraft(d)" class="px-3 py-1.5 border border-gray-300 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 hover:border-red-300 dark:hover:border-red-800 rounded-md text-xs">Delete</button>
+          </div>
+        </div>
+      </template>
+      <div x-show="!recentLoading && filteredRecent.length === 0" class="col-span-full text-center py-12 text-gray-500">
+        <p>No drafts found.</p>
+        <button @click="activeTab = 'compose'" class="mt-2 text-li-blue hover:underline text-sm">Start composing →</button>
+      </div>
+    </div>
+  </div>
+
 </main>
+
+<!-- Toast -->
+<div x-show="toast.show" x-cloak
+     x-transition:enter="transition ease-out duration-200"
+     x-transition:enter-start="opacity-0 translate-y-2"
+     x-transition:enter-end="opacity-100 translate-y-0"
+     x-transition:leave="transition ease-in duration-150"
+     x-transition:leave-start="opacity-100"
+     x-transition:leave-end="opacity-0"
+     class="fixed bottom-6 right-6 z-50 px-4 py-2.5 rounded-lg shadow-li-pop text-sm font-medium"
+     :class="toast.kind === 'error' ? 'bg-red-600 text-white' : toast.kind === 'success' ? 'bg-li-accent text-white' : 'bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900'"
+     x-text="toast.msg"></div>
 
 <script>
 function draftsPanel() {
   return {
+    // ==================== STATE ====================
     dark: document.documentElement.classList.contains('dark'),
+    activeTab: 'compose',
+    aiOpen: true,
+    scheduleOpen: false,
+    scheduleTime: '',
     loading: false,
-    recentOpen: true,
-    form: { topic: '', tone: 'professional', length: 150, hashtags: true },
+    templateLoading: false,
+    recentLoading: false,
+    profile: { name: '', headline: '' },
+    form: { topic: '', tone: 'professional', length: 150, hashtags: true, style: 'story' },
     output: '',
     recent: [],
-    async init() { await this.loadRecent(); },
-    async loadRecent() {
-      try { const r = await fetch('/api/drafts'); if (r.ok) { const d = await r.json(); this.recent = d.drafts || d || []; } } catch (e) { this.recent = []; }
+    filteredRecent: [],
+    searchQuery: '',
+    templates: [],
+    toast: { show: false, msg: '', kind: 'info' },
+    _toastTimer: null,
+
+    // ==================== COMPUTED ====================
+    get plainText() {
+      const el = this.$refs.editor;
+      if (!el) return '';
+      return (el.innerText || el.textContent || '').replace(/\u00A0/g, ' ').trim();
     },
+    get charCount() { return this.plainText.length; },
+    get wordCount() {
+      const t = this.plainText.trim();
+      return t ? t.split(/\s+/).length : 0;
+    },
+    get lineCount() {
+      const t = this.plainText;
+      return t ? t.split('\n').filter(l => l.trim()).length : 0;
+    },
+    get hashtagCount() {
+      const t = this.plainText;
+      return (t.match(/#[\w]+/g) || []).length;
+    },
+    get mentionCount() {
+      const t = this.plainText;
+      return (t.match(/@[\w]+/g) || []).length;
+    },
+    get readTime() {
+      return Math.max(1, Math.round(this.wordCount / 4));
+    },
+    get previewHtml() {
+      const el = this.$refs.editor;
+      if (!el) return '';
+      let html = el.innerHTML || '';
+      // LinkedIn-like: blank line → paragraph break
+      html = html.replace(/<div><br><\/div>/g, '<br>').replace(/<div>/g, '<p>').replace(/<\/div>/g, '</p>');
+      // Auto-link hashtags and mentions if not already wrapped
+      const tmp = document.createElement('div');
+      tmp.innerHTML = html;
+      tmp.querySelectorAll('span.tag, span.mention').forEach(s => s.classList.add('kept'));
+      // Wrap loose # and @ in text nodes
+      const walker = document.createTreeWalker(tmp, NodeFilter.SHOW_TEXT, null, false);
+      const nodes = [];
+      while (walker.nextNode()) nodes.push(walker.currentNode);
+      for (const node of nodes) {
+        const parent = node.parentElement;
+        if (parent && (parent.classList.contains('tag') || parent.classList.contains('mention'))) continue;
+        const replaced = node.nodeValue
+          .replace(/(^|\s)(#[\w]+)/g, '$1<span class="tag">$2</span>')
+          .replace(/(^|\s)(@[\w]+)/g, '$1<span class="mention">$2</span>');
+        if (replaced !== node.nodeValue) {
+          const span = document.createElement('span');
+          span.innerHTML = replaced;
+          node.parentNode.replaceChild(span, node);
+        }
+      }
+      return tmp.innerHTML;
+    },
+
+    // ==================== INIT ====================
+    async init() {
+      this.$watch('dark', v => {
+        document.documentElement.classList.toggle('dark', v);
+        localStorage.setItem('theme', v ? 'dark' : 'light');
+      });
+      this.$watch('plainText', () => { this._autoSave(); });
+      await this.loadProfile();
+      await this.loadRecent();
+      this._loadLocal();
+    },
+
+    async loadProfile() {
+      try {
+        const r = await fetch('/api/profile');
+        if (r.ok) {
+          const d = await r.json();
+          this.profile = d;
+        }
+      } catch (e) { /* silent */ }
+      if (!this.profile.name) {
+        this.profile = { name: 'Alian', headline: 'Engineer · linkedin-mcp-pro' };
+      }
+    },
+
+    // ==================== EDITOR OPS ====================
+    exec(cmd) {
+      this.$refs.editor.focus();
+      document.execCommand(cmd, false, null);
+      this.$refs.editor.dispatchEvent(new Event('input'));
+    },
+    insertList(type) {
+      this.$refs.editor.focus();
+      document.execCommand(type === 'ul' ? 'insertUnorderedList' : 'insertOrderedList', false, null);
+      this.$refs.editor.dispatchEvent(new Event('input'));
+    },
+    insertEmoji() {
+      const emojis = ['😀', '🚀', '💡', '🔥', '✨', '🎯', '👀', '🤔', '📈', '⚡', '🙌', '💪', '🙏', '❤️', '🎉'];
+      const e = emojis[Math.floor(Math.random() * emojis.length)];
+      this.insertText(e);
+    },
+    insertLink() {
+      const url = prompt('Enter URL:', 'https://');
+      if (!url) return;
+      this.$refs.editor.focus();
+      document.execCommand('createLink', false, url);
+      this.$refs.editor.dispatchEvent(new Event('input'));
+    },
+    insertHashtag() { this.insertText(' #'); },
+    insertMention() { this.insertText(' @'); },
+    insertText(text) {
+      this.$refs.editor.focus();
+      document.execCommand('insertText', false, text);
+      this.$refs.editor.dispatchEvent(new Event('input'));
+    },
+    onEditorInput(e) {
+      // noop, watcher handles it
+    },
+    onPaste(e) {
+      e.preventDefault();
+      const text = (e.clipboardData || window.clipboardData).getData('text/plain');
+      document.execCommand('insertText', false, text);
+    },
+
+    // ==================== DRAFT GENERATION ====================
     async draft() {
-      if (!this.form.topic.trim()) { alert('Please enter a topic'); return; }
+      if (!this.form.topic.trim()) { this.notify('Please enter a topic', 'error'); return; }
       this.loading = true;
       try {
-        const r = await fetch('/api/drafts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: this.form.topic, tone: this.form.tone, length: this.form.length, include_hashtags: this.form.hashtags }) });
-        if (r.ok) { const d = await r.json(); this.output = d.text || ''; }
-        else { const err = await r.text(); this.output = ''; alert('Draft failed: ' + err); }
-      } catch (e) { alert('Draft failed: ' + e.message); }
+        const r = await fetch('/api/drafts', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            topic: this.form.topic,
+            tone: this.form.tone,
+            length: this.form.length,
+            include_hashtags: this.form.hashtags,
+            style: this.form.style,
+          }),
+        });
+        if (r.ok) {
+          const d = await r.json();
+          this.setEditor(d.text || d.body || '');
+          this.notify('Draft generated ✓', 'success');
+        } else {
+          this.notify('Draft failed: ' + await r.text(), 'error');
+        }
+      } catch (e) {
+        this.notify('Draft failed: ' + e.message, 'error');
+      }
       this.loading = false;
     },
-    _localDraft() {
-      const tag = this.form.hashtags ? '\n\n#linkedin #growth' : '';
-      return `Thoughts on ${this.form.topic} in a ${this.form.tone} tone — here are ${this.form.length} words of insight…\n\nKey points:\n• One\n• Two\n• Three${tag}`;
+    setEditor(html) {
+      // Set HTML, preserving line breaks
+      this.$refs.editor.innerHTML = html.replace(/\n/g, '<br>');
+      this.$refs.editor.dispatchEvent(new Event('input'));
     },
+
+    // ==================== SAVE / LOAD / DELETE ====================
     async save() {
-      if (!this.output.trim()) { alert('Nothing to save — generate a draft first'); return; }
+      const body = this.plainText;
+      if (!body) { this.notify('Nothing to save — write something first', 'error'); return; }
       try {
-        const r = await fetch('/api/drafts/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ topic: this.form.topic, body: this.output, tone: this.form.tone }) });
-        if (r.ok) { await this.loadRecent(); alert('Draft saved'); }
-        else { alert('Save failed: ' + await r.text()); }
-      } catch (e) { alert('Save failed: ' + e.message); }
+        const r = await fetch('/api/drafts/save', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ topic: this.form.topic, body, tone: this.form.tone }),
+        });
+        if (r.ok) {
+          await this.loadRecent();
+          this.notify('Draft saved ✓', 'success');
+        } else {
+          this.notify('Save failed: ' + await r.text(), 'error');
+        }
+      } catch (e) {
+        this.notify('Save failed: ' + e.message, 'error');
+      }
     },
+    async loadRecent() {
+      this.recentLoading = true;
+      try {
+        const r = await fetch('/api/drafts');
+        if (r.ok) {
+          const d = await r.json();
+          this.recent = d.drafts || d || [];
+          this.filterRecent();
+        }
+      } catch (e) {
+        this.recent = [];
+      }
+      this.recentLoading = false;
+    },
+    filterRecent() {
+      const q = (this.searchQuery || '').toLowerCase().trim();
+      if (!q) { this.filteredRecent = this.recent; return; }
+      this.filteredRecent = this.recent.filter(d =>
+        (d.topic || '').toLowerCase().includes(q) ||
+        (d.body || '').toLowerCase().includes(q)
+      );
+    },
+    loadDraft(d) {
+      this.form.topic = d.topic || '';
+      this.form.tone = d.tone || 'professional';
+      this.setEditor(d.body || '');
+      this.notify('Draft loaded', 'info');
+    },
+    async deleteDraft(d) {
+      if (!confirm('Delete this draft? This cannot be undone.')) return;
+      try {
+        const r = await fetch('/api/drafts/' + d.id, { method: 'DELETE' });
+        if (r.ok) {
+          this.recent = this.recent.filter(x => x.id !== d.id);
+          this.filterRecent();
+          this.notify('Draft deleted', 'success');
+        } else {
+          this.notify('Delete failed', 'error');
+        }
+      } catch (e) {
+        this.notify('Delete failed: ' + e.message, 'error');
+      }
+    },
+
+    // ==================== POST / SCHEDULE ====================
     async post() {
-      if (!this.output.trim()) { alert('Generate a draft first'); return; }
+      const text = this.plainText;
+      if (!text) { this.notify('Nothing to post', 'error'); return; }
       if (!confirm('Publish this post to LinkedIn now?')) return;
       try {
-        const r = await fetch('/api/post', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ text: this.output, dry_run: false }) });
+        const r = await fetch('/api/post', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, dry_run: false }),
+        });
         const d = await r.json();
-        if (r.ok) { alert('Posted! (' + (d.text_len || 0) + ' chars)'); }
-        else { alert('Post failed: ' + (d.detail || r.statusText)); }
-      } catch (e) { alert('Post failed: ' + e.message); }
-    }
+        if (r.ok) {
+          this.notify('Posted! (' + (d.text_len || text.length) + ' chars)', 'success');
+          this.setEditor('');
+        } else {
+          this.notify('Post failed: ' + (d.detail || r.statusText), 'error');
+        }
+      } catch (e) {
+        this.notify('Post failed: ' + e.message, 'error');
+      }
+    },
+    async schedulePost() {
+      const text = this.plainText;
+      if (!text || !this.scheduleTime) { this.notify('Need post text and time', 'error'); return; }
+      try {
+        const r = await fetch('/api/schedules', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, run_at: this.scheduleTime, topic: this.form.topic }),
+        });
+        if (r.ok) {
+          this.notify('Scheduled for ' + this.scheduleTime, 'success');
+          this.scheduleOpen = false;
+        } else {
+          this.notify('Schedule failed', 'error');
+        }
+      } catch (e) {
+        this.notify('Schedule failed: ' + e.message, 'error');
+      }
+    },
+
+    // ==================== TEMPLATES ====================
+    async loadTemplates() {
+      this.templateLoading = true;
+      try {
+        const r = await fetch('/api/templates');
+        if (r.ok) {
+          const d = await r.json();
+          this.templates = d.templates || d || [];
+        }
+      } catch (e) { this.templates = []; }
+      this.templateLoading = false;
+    },
+    useTemplate(t) {
+      this.form.topic = t.name || t.title || 'Template';
+      this.form.tone = t.tone || 'professional';
+      this.setEditor(t.body || t.text || t.template || '');
+      this.activeTab = 'compose';
+      this.notify('Template loaded', 'info');
+    },
+
+    // ==================== UTIL ====================
+    notify(msg, kind = 'info') {
+      this.toast = { show: true, msg, kind };
+      clearTimeout(this._toastTimer);
+      this._toastTimer = setTimeout(() => { this.toast.show = false; }, 3000);
+    },
+    formatDate(iso) {
+      if (!iso) return '';
+      try {
+        const d = new Date(iso);
+        const now = new Date();
+        const diff = (now - d) / 1000;
+        if (diff < 60) return 'just now';
+        if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+        if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+        if (diff < 604800) return Math.floor(diff / 86400) + 'd ago';
+        return d.toLocaleDateString();
+      } catch (e) { return iso; }
+    },
+    _autoSave() {
+      // Browser local autosave
+      try {
+        localStorage.setItem('draft_autosave', JSON.stringify({
+          html: this.$refs.editor.innerHTML,
+          topic: this.form.topic,
+          ts: Date.now(),
+        }));
+      } catch (e) {}
+    },
+    _loadLocal() {
+      try {
+        const raw = localStorage.getItem('draft_autosave');
+        if (!raw) return;
+        const d = JSON.parse(raw);
+        if (Date.now() - d.ts > 7 * 24 * 3600 * 1000) return; // 1 week
+        this.$refs.editor.innerHTML = d.html || '';
+        this.form.topic = d.topic || '';
+        this.$refs.editor.dispatchEvent(new Event('input'));
+      } catch (e) {}
+    },
   }
 }
 </script>
