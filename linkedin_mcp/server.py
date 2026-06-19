@@ -695,6 +695,110 @@ TOOLS: list[dict[str, Any]] = [
             "additionalProperties": False,
         },
     },
+    # =================== v1.1.0 (Tier 3 — safety-gated) ===================
+    {
+        "name": "get_safety_status",
+        "description": "Get the current safety gate status: config, daily/hourly usage, active pauses, cooldowns. All Tier 3 features go through this gate.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "set_safety_config",
+        "description": "Update safety config. Pass any subset of: enabled, dry_run, tz, whitelist, blacklist, business_hours_start, business_hours_end, cooldown_min, cooldown_max, like_daily, comment_daily, connect_daily, feed_watch_daily, account_age_days, warmup_days, warmup_multiplier, like_hourly, comment_hourly, connect_hourly, negative_response_threshold, shadowban_pause_hours. Lists (whitelist/blacklist) are replaced entirely.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": True},
+    },
+    {
+        "name": "clear_safety_pause",
+        "description": "Manually clear any active pauses (negative feedback / shadow-ban). Use this after reviewing and addressing the cause.",
+        "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+    },
+    {
+        "name": "poll_feed",
+        "description": "Run a single poll cycle against the feed. Returns what was added, denied, and the safety gate decision.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "max_items": {"type": "integer", "default": 20, "minimum": 1, "maximum": 100},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "build_digest",
+        "description": "Build a digest of the last N hours of feed activity (top posts, mentions, keyword alerts, trending, warnings).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lookback_hours": {"type": "integer", "default": 24, "minimum": 1, "maximum": 168},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "get_digest_markdown",
+        "description": "Return the digest as Markdown text (ready to send to Telegram or email).",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "lookback_hours": {"type": "integer", "default": 24, "minimum": 1, "maximum": 168},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "auto_like_by_keyword",
+        "description": "Search posts by keyword and like them through the safety gate. Defaults to dry-run. Each like is gated by daily quota (default 30/day), hourly quota (5/hr), whitelist/blacklist match, and randomized cooldown. Returns detailed per-post decisions.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "keyword": {"type": "string"},
+                "max_results": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
+            },
+            "required": ["keyword"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "auto_comment_by_keyword",
+        "description": "Search posts by keyword and comment on them through the safety gate. VERY HIGH BAN RISK: defaults to 5/day, 1/hour, requires author in 1st-degree network, blocks spam phrases, requires personalized draft. ALWAYS start with dry_run=true.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "keyword": {"type": "string"},
+                "max_results": {"type": "integer", "default": 3, "minimum": 1, "maximum": 20},
+                "tone": {"type": "string", "default": "thought-leadership", "enum": ["professional", "casual", "thought-leadership", "story"]},
+            },
+            "required": ["keyword"],
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "auto_connect_by_criteria",
+        "description": "Find people matching criteria and send connection requests through the safety gate. HIGH BAN RISK: defaults to 20/day, 3/hour, requires personalized note (no blank invites), blocks recruiters/agencies by default. ALWAYS start with dry_run=true.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "role": {"type": "string", "description": "e.g. 'ML Engineer'"},
+                "location": {"type": "string", "description": "e.g. 'Pakistan'"},
+                "keywords": {"type": "string", "description": "space-separated keywords"},
+                "max_results": {"type": "integer", "default": 10, "minimum": 1, "maximum": 50},
+            },
+            "additionalProperties": False,
+        },
+    },
+    {
+        "name": "voice_to_draft",
+        "description": "Transcribe an audio file (mp3/m4a/wav/ogg) via Whisper, clean filler words, and produce an AI-drafted LinkedIn post. Returns draft for human review — does NOT post automatically. Requires ffmpeg + faster-whisper on host.",
+        "inputSchema": {
+            "type": "object",
+            "properties": {
+                "audio_path": {"type": "string", "description": "Absolute path to the audio file"},
+                "language": {"type": "string", "default": "en"},
+                "tone": {"type": "string", "default": "thought-leadership", "enum": ["professional", "casual", "thought-leadership", "story"]},
+            },
+            "required": ["audio_path"],
+            "additionalProperties": False,
+        },
+    },
 ]
 
 
@@ -1132,6 +1236,64 @@ async def _dispatch_v1(name: str, args: dict) -> Any:
 
 
 # ----------------------------------------------------------------------------
+# v1.1.0 (Tier 3) dispatcher — safety-gated auto-engagement + voice + digest
+# ----------------------------------------------------------------------------
+
+V1_1_TOOL_NAMES = {
+    "get_safety_status", "set_safety_config", "clear_safety_pause",
+    "poll_feed", "build_digest", "get_digest_markdown",
+    "auto_like_by_keyword",
+    "auto_comment_by_keyword",
+    "auto_connect_by_criteria",
+    "voice_to_draft",
+}
+
+
+async def _dispatch_v1_1(name: str, args: dict) -> Any:
+    """Dispatcher for the v1.1.0 feature set (Tier 3 — safety-gated)."""
+    from .tools import v1_1_features as _v1_1
+    if name == "get_safety_status":
+        return _v1_1.get_safety_status()
+    if name == "set_safety_config":
+        return _v1_1.set_safety_config(**args)
+    if name == "clear_safety_pause":
+        return _v1_1.clear_safety_pause()
+    if name == "poll_feed":
+        return _v1_1.poll_feed(max_items=int(args.get("max_items", 20)))
+    if name == "build_digest":
+        return _v1_1.build_digest(lookback_hours=int(args.get("lookback_hours", 24)))
+    if name == "get_digest_markdown":
+        return _v1_1.get_digest_markdown(
+            lookback_hours=int(args.get("lookback_hours", 24))
+        )
+    if name == "auto_like_by_keyword":
+        return _v1_1.auto_like_by_keyword(
+            keyword=args["keyword"],
+            max_results=int(args.get("max_results", 10)),
+        )
+    if name == "auto_comment_by_keyword":
+        return _v1_1.auto_comment_by_keyword(
+            keyword=args["keyword"],
+            max_results=int(args.get("max_results", 3)),
+            tone=args.get("tone", "thought-leadership"),
+        )
+    if name == "auto_connect_by_criteria":
+        return _v1_1.auto_connect_by_criteria(
+            role=args.get("role", ""),
+            location=args.get("location", ""),
+            keywords=args.get("keywords", ""),
+            max_results=int(args.get("max_results", 10)),
+        )
+    if name == "voice_to_draft":
+        return _v1_1.voice_to_draft(
+            audio_path=args["audio_path"],
+            language=args.get("language", "en"),
+            tone=args.get("tone", "thought-leadership"),
+        )
+    raise ValueError(f"Unknown v1.1 tool: {name}")
+
+
+# ----------------------------------------------------------------------------
 # MCP server wiring
 # ----------------------------------------------------------------------------
 
@@ -1275,8 +1437,12 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             "list_competitors_tool", "add_competitor_tool", "add_competitor_post_tool", "get_competitor_report_tool",
         ):
             data = await _dispatch_v1(name, arguments)
+        # v1.1.0 features — safety-gated Tier 3 (auto-like, auto-comment,
+        # auto-connect, voice-to-post, feed listener, digest)
+        elif name in V1_1_TOOL_NAMES:
+            data = await _dispatch_v1_1(name, arguments)
         else:
-            return [TextContent(type="text", text=f"Unknown tool: {name}")] 
+            return [TextContent(type="text", text=f"Unknown tool: {name}")]
 
         # Render response
         if isinstance(data, (dict, list)):
