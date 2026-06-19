@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Templates · linkedin-mcp-pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { 'li-blue': '#0a66c2', 'li-blue-dark': '#004182' },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          animation: { 'fade-in': 'fadeIn 0.3s ease-in-out' },
+          keyframes: { fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } } },
+        },
+      },
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <style>[x-cloak] { display: none !important; } body { font-family: 'Inter', system-ui, sans-serif; }</style>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
+    })();
+  </script>
+</head>
+<body x-data="templatesPanel()" x-init="init()" class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+<nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gradient-to-br from-li-blue to-li-blue-dark rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+        </div>
+        <span class="text-lg font-bold bg-gradient-to-r from-li-blue to-li-blue-dark bg-clip-text text-transparent">linkedin-mcp-pro</span>
+      </a>
+      <button @click="dark = !dark" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        <svg x-show="!dark" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        <svg x-show="dark" x-cloak class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+  <div class="rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white p-8 shadow-xl mb-8 flex items-center justify-between">
+    <div>
+      <h1 class="text-3xl font-bold mb-2">Templates</h1>
+      <p class="text-amber-50">Reusable post structures for every occasion</p>
+    </div>
+    <button @click="showModal = true" class="px-4 py-2 bg-white/20 hover:bg-white/30 backdrop-blur rounded-lg font-medium transition">+ New template</button>
+  </div>
+
+  <div class="mb-6">
+    <input type="text" x-model="query" placeholder="Search templates…" class="w-full max-w-md px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800 focus:ring-2 focus:ring-li-blue focus:border-transparent">
+  </div>
+
+  <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <template x-for="t in filtered" :key="t.id">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 hover:shadow-lg hover:-translate-y-0.5 transition">
+        <div class="flex items-start justify-between mb-2">
+          <h3 class="font-semibold text-lg" x-text="t.name"></h3>
+          <span class="text-xs text-gray-400 font-mono" x-text="'v' + (t.version || 1)"></span>
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 mb-3 line-clamp-3" x-text="t.body"></p>
+        <div class="flex flex-wrap gap-1 mb-4">
+          <template x-for="tag in (t.tags || [])" :key="tag">
+            <span :class="tagColor(tag)" class="px-2 py-0.5 text-xs font-medium rounded-full" x-text="tag"></span>
+          </template>
+        </div>
+        <div class="flex gap-2">
+          <button class="flex-1 px-3 py-1.5 text-sm bg-li-blue hover:bg-li-blue-dark text-white rounded-md transition">Use</button>
+          <button class="flex-1 px-3 py-1.5 text-sm bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition">Edit</button>
+          <button @click="remove(t)" class="px-3 py-1.5 text-sm bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-md transition">Delete</button>
+        </div>
+      </div>
+    </template>
+  </div>
+
+  <div x-show="filtered.length === 0" class="text-center py-12 text-gray-500 dark:text-gray-400">No templates match your search</div>
+
+  <div x-show="showModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm" @click.self="showModal = false">
+    <div class="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl max-w-md w-full p-6">
+      <h2 class="text-xl font-bold mb-4">New template</h2>
+      <form @submit.prevent="create()" class="space-y-3">
+        <input type="text" x-model="form.name" placeholder="Template name" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800" required>
+        <textarea x-model="form.body" placeholder="Template body (use {{placeholders}})" rows="5" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800" required></textarea>
+        <input type="text" x-model="form.tags" placeholder="comma,separated,tags" class="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+        <div class="flex gap-2 pt-2">
+          <button type="button" @click="showModal = false" class="flex-1 px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg font-medium transition">Cancel</button>
+          <button type="submit" class="flex-1 px-4 py-2 bg-li-blue hover:bg-li-blue-dark text-white rounded-lg font-medium transition">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</main>
+
+<script>
+function templatesPanel() {
+  return {
+    dark: document.documentElement.classList.contains('dark'),
+    showModal: false,
+    query: '',
+    templates: [],
+    form: { name: '', body: '', tags: '' },
+    get filtered() {
+      const q = this.query.toLowerCase();
+      if (!q) return this.templates;
+      return this.templates.filter(t => t.name.toLowerCase().includes(q) || (t.body || '').toLowerCase().includes(q) || (t.tags || []).join(' ').toLowerCase().includes(q));
+    },
+    tagColor(tag) {
+      const colors = ['bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300', 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300', 'bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300', 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300', 'bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300'];
+      let h = 0; for (let i = 0; i < tag.length; i++) h = (h * 31 + tag.charCodeAt(i)) & 0xffff;
+      return colors[h % colors.length];
+    },
+    async init() { await this.load(); },
+    async load() {
+      try { const r = await fetch('/api/templates'); if (r.ok) this.templates = await r.json(); else this.templates = this._seed(); } catch (e) { this.templates = this._seed(); }
+    },
+    _seed() {
+      return [
+        { id: 1, name: 'Morning Tip', body: 'Here is a quick tip I learned this week about {{topic}}…\n\n#productivity #growth', tags: ['tip', 'short'], version: 1 },
+        { id: 2, name: 'Weekly Recap', body: 'This week I shipped {{thing1}} and {{thing2}}. Here are the lessons…', tags: ['recap', 'weekly'], version: 1 },
+        { id: 3, name: 'Industry News', body: 'Interesting development in {{industry}}: {{headline}}. What do you think?', tags: ['news', 'discussion'], version: 1 },
+        { id: 4, name: 'Hiring Post', body: 'We are hiring a {{role}} at {{company}}! If you love {{thing}}, DM me.', tags: ['hiring'], version: 1 },
+      ];
+    },
+    async create() {
+      const payload = { ...this.form, tags: this.form.tags.split(',').map(s => s.trim()).filter(Boolean) };
+      try { const r = await fetch('/api/templates', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) }); if (r.ok) { await this.load(); this.showModal = false; this.form = { name: '', body: '', tags: '' }; } } catch (e) {}
+    },
+    async remove(t) { if (!confirm('Delete this template?')) return; try { await fetch('/api/templates/' + t.id, { method: 'DELETE' }); await this.load(); } catch (e) {} }
+  }
+}
+</script>
+</body>
+</html>

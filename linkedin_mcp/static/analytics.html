@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Analytics · linkedin-mcp-pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { 'li-blue': '#0a66c2', 'li-blue-dark': '#004182' },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          animation: { 'fade-in': 'fadeIn 0.3s ease-in-out' },
+          keyframes: { fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } } },
+        },
+      },
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <style>[x-cloak] { display: none !important; } body { font-family: 'Inter', system-ui, sans-serif; }</style>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
+    })();
+  </script>
+</head>
+<body x-data="analyticsPanel()" x-init="init(); $watch('days', () => load())" class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+<nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gradient-to-br from-li-blue to-li-blue-dark rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+        </div>
+        <span class="text-lg font-bold bg-gradient-to-r from-li-blue to-li-blue-dark bg-clip-text text-transparent">linkedin-mcp-pro</span>
+      </a>
+      <button @click="dark = !dark" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        <svg x-show="!dark" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        <svg x-show="dark" x-cloak class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+  <div class="rounded-2xl bg-gradient-to-br from-cyan-500 to-blue-600 text-white p-8 shadow-xl mb-8">
+    <div class="flex items-center justify-between">
+      <div>
+        <h1 class="text-3xl font-bold mb-2">Analytics</h1>
+        <p class="text-cyan-50">Track performance and engagement trends</p>
+      </div>
+      <div class="flex bg-white/20 backdrop-blur rounded-lg p-1">
+        <template x-for="d in [7, 30, 90]" :key="d">
+          <button @click="days = d" :class="days === d ? 'bg-white text-cyan-700' : 'text-white hover:bg-white/10'" class="px-3 py-1.5 text-sm font-medium rounded-md transition" x-text="d + 'd'"></button>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+    <template x-for="k in kpis" :key="k.label">
+      <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-5 hover:shadow-lg hover:scale-105 transition cursor-default">
+        <div class="text-sm text-gray-500 dark:text-gray-400 mb-1" x-text="k.label"></div>
+        <div class="text-2xl font-bold mb-1" x-text="k.value"></div>
+        <div :class="k.delta > 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'" class="text-xs font-medium" x-text="(k.delta > 0 ? '↑ +' : '↓ ') + k.delta + '%'"></div>
+      </div>
+    </template>
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+    <div class="lg:col-span-2 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+      <h3 class="text-lg font-semibold mb-4">Engagement over time</h3>
+      <div class="h-64"><canvas id="engagementChart"></canvas></div>
+    </div>
+    <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+      <h3 class="text-lg font-semibold mb-4">Top posts</h3>
+      <div class="space-y-3">
+        <template x-for="(p, i) in topPosts" :key="i">
+          <div class="flex items-start gap-3">
+            <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-li-blue to-li-blue-dark text-white flex items-center justify-center text-xs font-bold" x-text="i+1"></div>
+            <div class="flex-1 min-w-0">
+              <p class="text-sm font-medium truncate" x-text="p.title"></p>
+              <p class="text-xs text-gray-500" x-text="p.metrics"></p>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
+  </div>
+
+  <div class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+    <h3 class="text-lg font-semibold mb-4">Hour-of-day heatmap</h3>
+    <div class="grid grid-cols-12 gap-1">
+      <template x-for="h in 24" :key="h">
+        <div class="aspect-square rounded text-xs flex items-center justify-center font-mono" :class="heatColor(hourValue(h-1))" :title="(h-1) + ':00 — ' + hourValue(h-1) + ' actions'" x-text="(h-1).toString().padStart(2,'0')"></div>
+      </template>
+    </div>
+    <div class="flex items-center gap-2 mt-4 text-xs text-gray-500">
+      <span>Less</span>
+      <div class="w-4 h-4 rounded bg-cyan-100 dark:bg-cyan-900/30"></div>
+      <div class="w-4 h-4 rounded bg-cyan-300 dark:bg-cyan-700"></div>
+      <div class="w-4 h-4 rounded bg-cyan-500"></div>
+      <div class="w-4 h-4 rounded bg-cyan-700"></div>
+      <span>More</span>
+    </div>
+  </div>
+</main>
+
+<script>
+function analyticsPanel() {
+  return {
+    dark: document.documentElement.classList.contains('dark'),
+    days: 30,
+    kpis: [
+      { label: 'Impressions', value: '12.4K', delta: 18 },
+      { label: 'Engagements', value: '892', delta: 24 },
+      { label: 'New followers', value: '147', delta: 12 },
+      { label: 'Post views', value: '4.2K', delta: -3 },
+    ],
+    topPosts: [
+      { title: 'How we scaled to 10K users', metrics: '234 reactions · 47 comments' },
+      { title: '3 lessons from a failed launch', metrics: '189 reactions · 32 comments' },
+      { title: 'My morning routine for deep work', metrics: '156 reactions · 28 comments' },
+    ],
+    chart: null,
+    heatData: Array.from({ length: 24 }, (_, h) => Math.round(5 + 30 * Math.exp(-Math.pow((h - 14) / 4, 2)) + Math.random() * 5)),
+    hourValue(h) { return this.heatData[h] || 0; },
+    heatColor(v) {
+      if (v < 10) return 'bg-cyan-100 dark:bg-cyan-900/30 text-cyan-900 dark:text-cyan-100';
+      if (v < 18) return 'bg-cyan-300 dark:bg-cyan-700 text-cyan-900 dark:text-white';
+      if (v < 26) return 'bg-cyan-500 text-white';
+      return 'bg-cyan-700 text-white';
+    },
+    async init() { await this.load(); },
+    async load() {
+      try {
+        const r = await fetch('/api/summary?days=' + this.days);
+        if (r.ok) {
+          const d = await r.json();
+          if (d.kpis) this.kpis = d.kpis;
+        }
+      } catch (e) {}
+      this.renderChart();
+    },
+    renderChart() {
+      const ctx = document.getElementById('engagementChart');
+      if (!ctx) return;
+      if (this.chart) this.chart.destroy();
+      const labels = Array.from({ length: this.days }, (_, i) => 'D' + (i + 1));
+      const data = Array.from({ length: this.days }, () => Math.round(20 + Math.random() * 80));
+      this.chart = new Chart(ctx, {
+        type: 'bar',
+        data: { labels, datasets: [{ label: 'Engagements', data, backgroundColor: '#0a66c2', borderRadius: 4 }] },
+        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { grid: { display: false } }, y: { beginAtZero: true } } }
+      });
+    }
+  }
+}
+</script>
+</body>
+</html>

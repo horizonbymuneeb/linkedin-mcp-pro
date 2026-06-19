@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Settings · linkedin-mcp-pro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: { 'li-blue': '#0a66c2', 'li-blue-dark': '#004182' },
+          fontFamily: { sans: ['Inter', 'system-ui', 'sans-serif'] },
+          animation: { 'fade-in': 'fadeIn 0.3s ease-in-out' },
+          keyframes: { fadeIn: { '0%': { opacity: 0 }, '100%': { opacity: 1 } } },
+        },
+      },
+    }
+  </script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.13.3/dist/cdn.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+  <style>[x-cloak] { display: none !important; } body { font-family: 'Inter', system-ui, sans-serif; }</style>
+  <script>
+    (function() {
+      const saved = localStorage.getItem('theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (saved === 'dark' || (!saved && prefersDark)) document.documentElement.classList.add('dark');
+    })();
+  </script>
+</head>
+<body x-data="settingsPanel()" x-init="init()" class="bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 min-h-screen">
+
+<nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-center justify-between h-16">
+      <a href="/" class="flex items-center gap-2">
+        <div class="w-8 h-8 bg-gradient-to-br from-li-blue to-li-blue-dark rounded-lg flex items-center justify-center">
+          <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M20.5 2h-17A1.5 1.5 0 002 3.5v17A1.5 1.5 0 003.5 22h17a1.5 1.5 0 001.5-1.5v-17A1.5 1.5 0 0020.5 2zM8 19H5v-9h3zM6.5 8.25A1.75 1.75 0 118.3 6.5a1.78 1.78 0 01-1.8 1.75zM19 19h-3v-4.74c0-1.42-.6-1.93-1.38-1.93A1.74 1.74 0 0013 14.19a.66.66 0 000 .14V19h-3v-9h2.9v1.3a3.11 3.11 0 012.7-1.4c1.55 0 3.36.86 3.36 3.66z"/></svg>
+        </div>
+        <span class="text-lg font-bold bg-gradient-to-r from-li-blue to-li-blue-dark bg-clip-text text-transparent">linkedin-mcp-pro</span>
+      </a>
+      <button @click="dark = !dark" class="p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition">
+        <svg x-show="!dark" class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path d="M17.293 13.293A8 8 0 016.707 2.707a8.001 8.001 0 1010.586 10.586z"/></svg>
+        <svg x-show="dark" x-cloak class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 2a1 1 0 011 1v1a1 1 0 11-2 0V3a1 1 0 011-1zm4 8a4 4 0 11-8 0 4 4 0 018 0zm-.464 4.95l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 1.414zm2.12-10.607a1 1 0 010 1.414l-.706.707a1 1 0 11-1.414-1.414l.707-.707a1 1 0 011.414 0zM17 11a1 1 0 100-2h-1a1 1 0 100 2h1zm-7 4a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM5.05 6.464A1 1 0 106.465 5.05l-.708-.707a1 1 0 00-1.414 1.414l.707.707zm1.414 8.486l-.707.707a1 1 0 01-1.414-1.414l.707-.707a1 1 0 011.414 1.414zM4 11a1 1 0 100-2H3a1 1 0 000 2h1z" clip-rule="evenodd"/></svg>
+      </button>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-fade-in">
+  <div class="rounded-2xl bg-gradient-to-br from-gray-700 to-gray-900 text-white p-8 shadow-xl mb-8">
+    <h1 class="text-3xl font-bold mb-2">Settings</h1>
+    <p class="text-gray-300">Customize appearance, behavior, and integrations</p>
+  </div>
+
+  <div class="space-y-6">
+    <section class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-1">Appearance</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Choose how the interface looks</p>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <template x-for="opt in [{key:'light', label:'Light'}, {key:'dark', label:'Dark'}, {key:'system', label:'System'}]" :key="opt.key">
+          <button @click="setTheme(opt.key)" :class="theme === opt.key ? 'border-li-blue bg-li-blue-light dark:bg-li-blue-dark/20' : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'" class="p-4 border-2 rounded-xl text-left transition">
+            <div class="flex items-center gap-2 mb-2">
+              <div :class="opt.key === 'light' ? 'bg-white border' : opt.key === 'dark' ? 'bg-gray-900' : 'bg-gradient-to-r from-white to-gray-900'" class="w-8 h-8 rounded border border-gray-300 dark:border-gray-600"></div>
+              <span class="font-medium" x-text="opt.label"></span>
+            </div>
+            <p class="text-xs text-gray-500" x-text="opt.key === 'system' ? 'Follow OS preference' : 'Always ' + opt.label.toLowerCase()"></p>
+          </button>
+        </template>
+      </div>
+    </section>
+
+    <section class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-1">About</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Version and resources</p>
+      <div class="space-y-2 text-sm">
+        <div class="flex justify-between"><span class="text-gray-500">Version</span><span class="font-mono" x-text="version"></span></div>
+        <div class="flex justify-between"><span class="text-gray-500">GitHub</span><a href="https://github.com/horizonbymuneeb/linkedin-mcp-pro" class="text-li-blue hover:underline" target="_blank" rel="noopener">horizonbymuneeb/linkedin-mcp-pro</a></div>
+        <div class="flex justify-between"><span class="text-gray-500">Docs</span><a href="/docs" class="text-li-blue hover:underline">Documentation</a></div>
+      </div>
+    </section>
+
+    <section class="bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-800 p-6">
+      <h2 class="text-lg font-semibold mb-1">Advanced</h2>
+      <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">Logging and server controls</p>
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm font-medium mb-1">Log level</label>
+          <select x-model="logLevel" class="w-full sm:w-64 px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800">
+            <option>DEBUG</option><option>INFO</option><option>WARNING</option><option>ERROR</option>
+          </select>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button @click="clearCache()" class="px-4 py-2 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg text-sm font-medium transition">Clear cache</button>
+          <button @click="restart()" class="px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 hover:bg-amber-200 dark:hover:bg-amber-900/50 rounded-lg text-sm font-medium transition">Restart server</button>
+        </div>
+        <div x-show="msg" x-cloak class="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 text-sm" x-text="msg"></div>
+      </div>
+    </section>
+
+    <div class="flex justify-end">
+      <button @click="resetAll()" class="px-4 py-2 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-900/50 rounded-lg font-medium transition">Reset to defaults</button>
+    </div>
+  </div>
+</main>
+
+<script>
+function settingsPanel() {
+  return {
+    dark: document.documentElement.classList.contains('dark'),
+    theme: localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'),
+    version: '0.0.0',
+    logLevel: 'INFO',
+    msg: '',
+    async init() { try { const r = await fetch('/api/version'); if (r.ok) { const d = await r.json(); this.version = d.version || '0.0.0'; this.logLevel = d.log_level || 'INFO'; } } catch (e) { this.version = '0.0.0'; } },
+    setTheme(t) {
+      this.theme = t;
+      if (t === 'dark') { this.dark = true; document.documentElement.classList.add('dark'); localStorage.setItem('theme', 'dark'); }
+      else if (t === 'light') { this.dark = false; document.documentElement.classList.remove('dark'); localStorage.setItem('theme', 'light'); }
+      else { localStorage.removeItem('theme'); const p = window.matchMedia('(prefers-color-scheme: dark)').matches; this.dark = p; document.documentElement.classList.toggle('dark', p); }
+    },
+    flash(m) { this.msg = m; setTimeout(() => this.msg = '', 2500); },
+    async clearCache() { try { await fetch('/api/cache/clear', { method: 'POST' }); this.flash('✓ Cache cleared'); } catch (e) { this.flash('Failed'); } },
+    async restart() { if (!confirm('Restart the server?')) return; try { await fetch('/api/server/restart', { method: 'POST' }); this.flash('✓ Server restarting…'); } catch (e) { this.flash('Failed'); } },
+    async resetAll() { if (!confirm('Reset all settings to defaults?')) return; try { await fetch('/api/settings/reset', { method: 'POST' }); this.setTheme('system'); this.flash('✓ Settings reset'); } catch (e) { this.flash('Failed'); } }
+  }
+}
+</script>
+</body>
+</html>
