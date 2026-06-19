@@ -36,6 +36,7 @@ dependencies = [
     "rich>=13.7",               # pretty logging
     "PyYAML>=6.0",              # post templates (v0.5.0)
     "croniter>=2.0",            # post scheduler cron parsing (v0.5.0)
+    "python-telegram-bot>=20.0", # Telegram bot control (v0.6.0)
     # NOTE: For write actions, we use `agent-browser` (Vercel Labs,
     # Apache-2.0, 36k+ stars) — a Rust CLI that drives real Chrome.
     # Install separately:

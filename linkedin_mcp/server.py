@@ -1112,6 +1112,11 @@ async def call_tool(name: str, arguments: dict) -> list[TextContent]:
             "get_active_account",
         ):
             data = await _dispatch_accounts(name, arguments)
+        # Telegram bot (v0.6.0) — introspection only; running bot is via CLI.
+        elif name == "telegram_bot_status":
+            from .telegram_bot import TelegramBot
+            bot = TelegramBot()
+            data = {"ok": True, "status": bot.status()}
         else:
             return [TextContent(type="text", text=f"Unknown tool: {name}")] 
 
