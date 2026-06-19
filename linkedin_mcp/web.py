@@ -22,10 +22,12 @@ from typing import Any, Optional
 
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import HTMLResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from .analytics import Analytics
 from .config import load_config
+from .cookies_api import router as cookies_router
 from .db import DB
 from .deadman import DeadManSwitch
 from .drafter import PostDrafter
@@ -38,8 +40,14 @@ log = logging.getLogger("linkedin_mcp.web")
 app = FastAPI(
     title="linkedin-mcp-pro web",
     description="Browser UI for the LinkedIn MCP server",
-    version="1.0.0",
+    version="1.1.0",
 )
+app.include_router(cookies_router)
+
+# Serve static files (cookies panel, etc.)
+_static_dir = Path(__file__).parent / "static"
+if _static_dir.exists():
+    app.mount("/static", StaticFiles(directory=str(_static_dir)), name="static")
 
 
 # ----------------------------------------------------------------------------
@@ -85,7 +93,18 @@ def _safety(db: DB) -> SafetyGuard:
 @app.get("/api/summary")
 def api_summary(days: int = 30) -> dict[str, Any]:
     db = _db()
-    return Analytics(db).summary(days=days)
+    raw = Analytics(db).summary(days=days)
+    sr = raw.get("success_rate", {})
+    # Surface fields the web UI expects (compatibility layer)
+    return {
+        "total_posts": raw.get("total_posts_in_window", 0),
+        "success_rate_pct": round(sr.get("rate", 0) * 100, 1),
+        "avg_post_length": raw.get("avg_post_length", 0),
+        "data_points": sr.get("total", 0),
+        "days": days,
+        # raw structure for advanced consumers
+        "raw": raw,
+    }
 
 
 @app.get("/api/schedules")
@@ -190,8 +209,12 @@ _DASHBOARD_HTML = """<!doctype html>
   </style>
 </head>
 <body>
-  <h1>linkedin-mcp-pro <span class="pill">v1.0.0</span></h1>
+  <h1>linkedin-mcp-pro <span class="pill">v1.1.0</span></h1>
   <p>Browser dashboard. The MCP server still runs on stdio/HTTP — this is just a UI.</p>
+  <p>
+    <a href="/static/cookies.html" class="pill" style="text-decoration:none; color:inherit">🔐 Cookies & Login</a>
+    <a href="https://github.com/horizonbymuneeb/linkedin-mcp-pro" class="pill" style="text-decoration:none; color:inherit">📦 GitHub</a>
+  </p>
 
   <h2>📊 Analytics <span id="sum-days" class="pill">30d</span></h2>
   <div id="summary" class="card">loading…</div>

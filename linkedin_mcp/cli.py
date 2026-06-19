@@ -91,8 +91,14 @@ def stats(action: str | None = None, limit: int = 20) -> int:
     return 0
 
 
-async def login_async(timeout_seconds: int = 300) -> int:
+async def login_async(timeout_seconds: int = 300, headless: bool = False) -> int:
     """Open browser, user logs in, profile is saved.
+
+    Args:
+      timeout_seconds: max wait for user to complete login.
+      headless: if True, run browser without visible window. Useful for
+                CI or when called from web UI; in headless mode you must
+                provide credentials another way (e.g. cookie paste).
 
     Returns 0 on success, 1 on failure.
     """
@@ -108,12 +114,12 @@ async def login_async(timeout_seconds: int = 300) -> int:
                 print("Aborted. Existing session preserved.", file=sys.stderr)
                 return 0
 
-    print(f"Opening browser to LinkedIn login...", file=sys.stderr)
+    print(f"Opening browser to LinkedIn login (headless={headless})...", file=sys.stderr)
     print(f"Profile will be saved at: {profile}", file=sys.stderr)
     print(f"", file=sys.stderr)
 
     try:
-        success = await interactive_login(cfg)
+        success = await interactive_login(cfg, headless=headless, timeout=timeout_seconds)
     except KeyboardInterrupt:
         print(f"\nLogin cancelled by user.", file=sys.stderr)
         return 1
@@ -134,7 +140,14 @@ async def login_async(timeout_seconds: int = 300) -> int:
 
 def login() -> int:
     """Sync wrapper for the login command."""
-    return asyncio.run(login_async())
+    import argparse
+    ap = argparse.ArgumentParser(prog="linkedin-mcp-login", description="Log in to LinkedIn once, save persistent profile.")
+    ap.add_argument("--headless", action="store_true", help="Run browser without visible window")
+    ap.add_argument("--headed", dest="headless", action="store_false", help="Run browser with visible window (default)")
+    ap.set_defaults(headless=False)
+    ap.add_argument("--timeout", type=int, default=300, help="Max seconds to wait for login (default 300)")
+    args = ap.parse_args()
+    return asyncio.run(login_async(timeout_seconds=args.timeout, headless=args.headless))
 
 
 if __name__ == "__main__":
